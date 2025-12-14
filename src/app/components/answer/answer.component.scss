@@ -1,0 +1,136 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+* { font-family: "Inter", sans-serif; }
+
+:host { display: flex; flex-direction: column; background: #f6f7f9; padding: 1rem; }
+
+.content {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.log-box {
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1rem;
+  max-height: 120px;
+  overflow-y: auto;
+  font-size: 13px;
+  font-family: monospace;
+}
+
+.log-item {
+  color: #856404;
+  padding: 0.3rem 0;
+  line-height: 1.4;
+}
+
+.side-panel {
+  width: 40%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.card {
+  background: white;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+}
+
+textarea, pre {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 8px;
+  padding: .6rem;
+  border: 1px solid #dcdcdc;
+  background: #fafafa;
+  font-size: 14px;
+  font-family: monospace;
+  /* Prevent long lines from overflowing the container */
+  overflow: auto;
+  white-space: pre-wrap; /* wrap long lines */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+button {
+  padding: 0.45rem 1rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: #007aff;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: .4rem;
+}
+
+.btn-copy {
+  background: #555;
+  margin-left: .5rem;
+}
+
+.chat-panel {
+  width: 60%;
+  background: white;
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+  display: flex;
+  flex-direction: column;
+  height: 500px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: .8rem;
+  padding: .5rem;
+}
+
+.msg {
+  padding: .6rem .9rem;
+  max-width: 70%;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.4;
+  position: relative;
+  background: #e8edf3;
+}
+
+.msg.me {
+  align-self: flex-end;
+  background: #007aff;
+  color: white;
+}
+
+.time {
+  font-size: 11px;
+  opacity: .7;
+  margin-top: 4px;
+}
+
+.chat-input-area {
+  display: flex;
+  gap: .5rem;
+  margin-top: 1rem;
+}
+
+.chat-input-area input {
+  flex: 1;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  padding: 0 .8rem;
+  font-size: 14px;
+}

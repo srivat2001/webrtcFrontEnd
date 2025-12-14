@@ -1,0 +1,241 @@
+@if(logs().length){
+
+<div class="log-box">
+  <div
+    class="log-item"
+    [ngClass]="{
+      normal: logs()[logs().length - 1]?.type === 'normal',
+      warn: logs()[logs().length - 1]?.type === 'warn',
+      danger: logs()[logs().length - 1]?.type === 'error'
+    }"
+  >
+    {{ logs()[logs().length - 1]?.message }}
+  </div>
+</div>
+
+}
+<div class="connection-status" [class.connected]="connectionState">
+  <span class="dot"></span>
+  <span class="label">
+    {{ connectionState }}
+  </span>
+</div>
+
+@if(sendBtn()){
+<div class="content">
+  <div
+    class="side-panel"
+    [ngClass]="{
+      open: chathidden
+    }"
+  >
+    <div class="screen-share">
+      <video #screenVideo class="video-loop" autoplay playsinline muted></video>
+      <div class="flex-btn-holder">
+        <div
+          class="icon-holder"
+          [ngClass]="{
+           'icon-holder-notsharedscreen': !isScreenShareStarted(),
+        }"
+        >
+          <mat-icon
+            [ngClass]="{
+              'copy-icon': true,
+              'material-symbols-outlined': true,
+              'btn-copy': true,
+
+              disabled: !sendBtn
+            }"
+            (click)="startScreenShare()"
+            [fontIcon]="sendBtn() ? 'screen_share' : 'screen_share'"
+            aria-label="Copy ICE candidate"
+          ></mat-icon>
+        </div>
+        <div
+          class="icon-holder"
+          [ngClass]="{
+           'icon-holder-notsharedscreen': !isScreenShareStarted(),
+        }"
+        >
+          <mat-icon
+            [ngClass]="{
+              'copy-icon': true,
+              'material-symbols-outlined': true,
+              'btn-copy': true,
+
+              disabled: !sendBtn
+            }"
+            (click)="openchat()"
+            [fontIcon]="sendBtn() ? 'chat' : 'chat'"
+            aria-label="Copy ICE candidate"
+          ></mat-icon>
+        </div>
+        @if(isScreenShareStarted()){
+
+        <div class="icon-holder cancel-btn">
+          <mat-icon
+            [ngClass]="{
+              'copy-icon': true,
+              'material-symbols-outlined': true,
+              'btn-copy': true,
+              disabled: !sendBtn
+            }"
+            [fontIcon]="sendBtn() ? 'cancel' : 'cancel'"
+            (click)="stopScreenShare()"
+            aria-label="Cancel screen share"
+          ></mat-icon>
+        </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="chat-panel"
+    [ngClass]="{
+      open: chathidden
+    }"
+  >
+    <div class="chat-header">
+      <h2>Chat</h2>
+    </div>
+    <div class="messages">
+      <div *ngFor="let m of messages()" class="msg" [ngClass]="{ me: m.me }">
+        {{ m.text }}
+        <div class="time">{{ m.time }}</div>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <input
+        [(ngModel)]="messageInput"
+        (ngModelChange)="messageInput.set($event)"
+        placeholder="Type a message…"
+        [disabled]="!sendBtn"
+      />
+      <div class="chatholder">
+        <mat-icon
+          [ngClass]="{
+            'copy-icon': true,
+            'material-symbols-outlined': true,
+            'btn-copy': true,
+            disabled: !sendBtn
+          }"
+          (click)="sendMessage()"
+          [fontIcon]="sendBtn() ? 'send' : 'cancel_schedule_send'"
+          aria-label="Copy ICE candidate"
+        ></mat-icon>
+      </div>
+    </div>
+    @if(!sendBtn()){
+    <div class="overlay"></div>
+
+    }
+  </div>
+</div>
+}@else {
+<div class="Offerer" flip [flipKey]="useServerToggle()">
+  <div class="chat-header">
+    <b class="wiggle">></b>
+    <div class="main-topic">Create an connection</div>
+  </div>
+  <div class="sub">You are the connection initiator</div>
+  <div
+    class="toggle-que-holder"
+    [style.background-color]="useServerToggle() ? '#005cbb' : '#74777f'"
+  >
+    <div class="que">Use server for connection initialization?</div>
+    <mat-slide-toggle
+      [checked]="useServerToggle()"
+      (change)="useServerToggle.set($event.checked)"
+      [aria-label]="'d'"
+    >
+    </mat-slide-toggle>
+  </div>
+
+  @if(true) {
+  <div class="mat-accordion">
+    <mat-accordion>
+      <mat-expansion-panel
+        [expanded]="isIceCreationAccordianExpanded()"
+        (opened)="isIceCreationAccordianExpanded.set(true)"
+        (closed)="isIceCreationAccordianExpanded.set(false)"
+      >
+        <mat-expansion-panel-header>
+          <mat-panel-title>Create a connection </mat-panel-title></mat-expansion-panel-header
+        >
+        <div class="connection-holder">
+          <div class="btn-iconflex">
+            <button matButton="filled" (click)="createOffer()">Create a connection</button>
+            <div class="icon-holder">
+              <mat-icon
+                class="copy-icon material-symbols-outlined btn-copy"
+                (click)="resetWebRTC(true)"
+                fontIcon="close"
+                class="close"
+                aria-label="close"
+              ></mat-icon>
+            </div>
+          </div>
+          @if(showProgressBar){
+          <div class="progress-holder">
+            <div
+              class="progress"
+              *ngFor="let step of progressSetuper(); let i = index"
+              [ngClass]="{ current: step }"
+            >
+              {{ stepLabels[i] }}
+
+              <!-- Loader on FIRST FALSE step -->
+              <div></div>
+              <mat-spinner
+                class="loader"
+                [diameter]="8"
+                *ngIf="i === firstIncompleteIndex()"
+              ></mat-spinner>
+            </div>
+          </div>
+          }
+
+          <div class="userid">
+            User id: <input #userid class="userid-holder" />
+
+            <mat-icon
+              class="copy-icon material-symbols-outlined btn-copy"
+              (click)="copyOffer()"
+              fontIcon="content_copy"
+              aria-label="Copy ICE candidate"
+            ></mat-icon>
+          </div>
+        </div>
+      </mat-expansion-panel>
+      <mat-expansion-panel>
+        <mat-expansion-panel-header>
+          <mat-panel-title>Your Previous Connections </mat-panel-title>
+        </mat-expansion-panel-header>
+        <div class="previous-connections">
+          <div class="prevConn" *ngFor="let item of rooms()">
+            <ng-container>
+              <!-- Extract first key dynamically -->
+              <div *ngFor="let key of item | keyvalue">
+                <div class="prevconnectionholder">
+                  Roomid: {{ key.key }}
+                  <mat-icon
+                    class="copy-icon material-symbols-outlined btn-copy"
+                    (click)="createOffer(false, key.key, key.value, $event)"
+                    fontIcon="outbound"
+                    aria-label="Copy ICE candidate"
+                  ></mat-icon>
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </div>
+      </mat-expansion-panel>
+    </mat-accordion>
+  </div>
+  }@else {
+  <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+
+  }
+</div>
+}

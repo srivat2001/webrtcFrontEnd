@@ -1,1 +1,74 @@
+// Include theming for Angular Material with `mat.theme()`.
+// This Sass mixin will define CSS variables that are used for styling Angular Material
+// components according to the Material 3 design spec.
+// Learn more about theming and how to use it for your application's
+// custom components at https://material.angular.dev/guide/theming
+@use '@angular/material' as mat;
+
+html {
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$azure-palette,
+        tertiary: mat.$blue-palette,
+      ),
+      typography: Roboto,
+      density: 0,
+    )
+  );
+  @include mat.card-overrides(
+    (
+      elevated-container-color: red,
+      elevated-container-shape: 32px,
+      title-text-size: 2rem,
+    )
+  );
+  @include mat.stepper-overrides(
+    (
+      container-color: transparent // filled-container-color: red,,,,
+    )
+  );
+}
+
+body {
+  // Default the application to a light color theme. This can be changed to
+  // `dark` to enable the dark color theme, or to `light dark` to defer to the
+  // user's system settings.
+  overflow-y: scroll;
+  // Set a default background, font and text colors for the application using
+  // Angular Material's system-level CSS variables. Learn more about these
+  // variables at https://material.angular.dev/guide/system-variables
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+
+  // Reset the user agent margin.
+  margin: 0;
+}
 /* You can add global styles to this file, and also import other style files */
+
+/* PrimeNG input focus override: remove green border/halo from theme */
+/* Adjust `border-color` and `box-shadow` as needed */
+.p-inputtext:focus,
+.p-inputtextarea:focus,
+input[pInputText]:focus,
+textarea[pInputTextarea]:focus {
+  border-color: #ced4da !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Optional: force background/foreground if theme sets dark colors */
+body {
+  background-color: black;
+  color: #111827 !important;
+}
+
+html,
+body {
+  height: 100%;
+}
+body {
+  margin: 0;
+  font-family: Roboto, 'Helvetica Neue', sans-serif;
+}

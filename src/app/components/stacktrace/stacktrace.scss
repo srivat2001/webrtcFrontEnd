@@ -1,0 +1,32 @@
+.log-box {
+  font-size: 13px;
+  font-family: monospace;
+  margin: 1rem;
+  width: 90%;
+  height: 50vh;
+  background: #4f4f4f08;
+  border: 1px solid #e7e7e7;
+  border-radius: 19px;
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.log-item {
+  line-height: 1.4;
+  color: black;
+  padding: 6px 11px;
+  font-size: 16px;
+}
+.normal {
+  color: 0 0 10px rgba(76, 175, 80, 0.6);
+}
+
+/* If latest log-item is warn */
+.warn {
+  color: 0 0 10px rgba(255, 193, 7, 0.6);
+}
+
+/* If latest log-item is danger */
+.error {
+  color: red;
+}

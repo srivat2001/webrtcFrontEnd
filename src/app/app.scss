@@ -1,0 +1,231 @@
+@import url('https://fonts.googleapis.com/css2?family=Stack+Sans+Text:wght@200..700&display=swap');
+/* Minimal styles to support PrimeNG-based chat layout. Uses PrimeNG utility classes where possible. */
+body {
+  overflow: hidden;
+}
+/* Modern Top Bar Navigation */
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: #ffffff;
+  color: #111827;
+  border-bottom: 1px solid #e5e7eb;
+  position: absolute;
+  top: 0;
+  z-index: 1000;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  width: fit-content;
+  margin: auto;
+  margin-top: auto;
+  border-radius: 50px;
+  margin-top: 23px;
+}
+::host {
+  overflow: hidden;
+}
+.top-bar a {
+  text-decoration: none;
+  padding: 5px 18px;
+  border-radius: 8px;
+  background: transparent;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  font-size: 14px;
+  position: relative;
+  overflow: hidden;
+  border-radius: 51px;
+}
+
+.top-bar a::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.05), transparent);
+  transition: left 0.5s ease;
+}
+
+.top-bar a:hover::before {
+  left: 100%;
+}
+.mat-step-text-label {
+  background-color: white;
+}
+.top-bar a:hover {
+  color: #111827;
+  background: #f3f4f6;
+  transform: translateY(-1px);
+}
+
+.top-bar a.active {
+  color: #fff;
+  background: #005cbb;
+  border: 1px solid #fff;
+}
+
+/* Full-page wrapper that centers its content */
+.chat-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: stretch; /* allow wrapper to occupy full height */
+  padding: 1rem; /* respect page padding while letting wrapper size adjust */
+} /* cover both MDC and non-MDC class names; global, highest chance to win */
+::ng-deep .mat-expansion-panel-body {
+  padding: 0;
+}
+
+.chat-wrapper {
+  width: 70%; /* fixed width relative to page */
+  max-width: 900px;
+  min-width: 380px;
+  height: calc(100vh - 2rem); /* occupy top-to-bottom (accounting for page padding) */
+  margin: 0 auto; /* center horizontally */
+  display: flex;
+  flex-direction: column;
+  position: relative; /* needed so composer can be absolutely positioned inside */
+  background: var(--surface-0, #ffffff);
+  border: 1px solid var(--surface-border, #e6e6e6); /* visible outer border */
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.messages {
+  flex: 1 1 auto;
+  padding: 1rem;
+  padding-bottom: 96px; /* leave space for the fixed composer */
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  justify-content: flex-end; /* messages appear from bottom */
+  overflow-y: auto;
+}
+
+.message {
+  max-width: 78%;
+}
+.message.received {
+  align-self: flex-start;
+}
+.message.sent {
+  align-self: flex-end;
+}
+
+.msg-card {
+  padding: 0.5rem 0.75rem;
+  border-radius: 10px;
+}
+.msg-card .m-0 {
+  margin: 0;
+}
+.msg-card .meta {
+  display: block;
+  font-size: 9px;
+  color: var(--text-secondary, #fff);
+  margin-top: 0.35rem;
+  margin-left: auto;
+  width: fit-content;
+}
+
+/* Message bubble colors and alignment */
+.message {
+  max-width: 78%;
+  display: flex;
+}
+.message .msg-card {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+.message.received {
+  align-self: flex-start;
+}
+.message.received .msg-card {
+  background: var(--surface-100, #f3f4f6);
+  color: var(--text-900, #111827);
+  border-radius: 12px 12px 12px 4px;
+}
+.message.sent {
+  align-self: flex-end;
+}
+.message.sent .msg-card {
+  background: var(--primary, #0ea5a0);
+  color: #fff;
+  border-radius: 12px 12px 4px 12px;
+}
+
+.composer {
+  padding: 0.6rem;
+  gap: 0.6rem;
+  display: flex;
+  align-items: center; /* vertically center input and button */
+  justify-content: space-between; /* input expands, button sits at the end */
+  position: absolute; /* fix to bottom of wrapper */
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  background: transparent;
+}
+
+.composer-input {
+  flex: 1 1 auto;
+  height: 56px; /* larger input */
+  font-size: 1rem;
+  padding: 0.6rem 1rem;
+  border-radius: 28px; /* rounded pill */
+  box-sizing: border-box;
+}
+
+.composer-send {
+  width: 36px; /* thin button */
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center; /* center icon */
+}
+
+/* Keep focus neutral (PrimeNG theme will typically handle focus; we neutralize only if theme sets a strong halo) */
+.composer-input:focus {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Router Container for Animations */
+.router-container {
+  position: relative;
+  width: 100%;
+  min-height: calc(100vh - 60px);
+  height: 100vh;
+}
+
+.route-content {
+  display: block;
+  width: 100%;
+}
+
+.route-content.animate {
+  animation: routeFadeIn 300ms ease-out;
+}
+
+@keyframes routeFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Trigger animation on route change */
+.router-container > * {
+  display: block;
+  width: 100%;
+  height: 81vh;
+}
