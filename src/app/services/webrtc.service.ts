@@ -188,6 +188,7 @@ export class WebRTCService {
       }
     };
     this.pc!.ontrack = (event) => {
+      console.log('Track received: with type', event, this.toReciveStreamType);
       const track = event.track;
       let stream: MediaStream;
       if (event.streams && event.streams.length > 0) {
