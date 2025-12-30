@@ -2,18 +2,25 @@ import { Component, signal } from '@angular/core';
 import { RouterOutlet, RouterLink, RouterLinkActive, NavigationEnd, Router } from '@angular/router';
 
 import { filter } from 'rxjs';
+import { ManualWebrtcService } from './services/manual-webrtc.service';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet,RouterLink,RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './app.html',
-  styleUrl: './app.scss'
+  styleUrl: './app.scss',
 })
 export class App {
   protected readonly title = signal('webrtcfrontend');
-    protected readonly value = signal('');
+  protected readonly value = signal('');
   protected readonly routeChange = signal(0);
-    constructor(private router: Router) {
+  get GetTime() {
+    return this.manualwertcService.seconds;
+  }
+  get isStarted() {
+    return this.manualwertcService.timerId;
+  }
+  constructor(private router: Router, private manualwertcService: ManualWebrtcService) {
     this.router.events
       .pipe(filter((event): event is NavigationEnd => event instanceof NavigationEnd))
       .subscribe(() => {

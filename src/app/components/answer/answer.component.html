@@ -1,4 +1,209 @@
-@if(logs().length){
+<ng-container>
+  <app-webrtc-ui [type]="'answer'"></app-webrtc-ui>
+</ng-container>
+
+<!-- @if(logs().length){
+
+<div class="log-box">
+  <div
+    class="log-item"
+    [ngClass]="{
+      normal: logs()[logs().length - 1]?.type === 'normal',
+      warn: logs()[logs().length - 1]?.type === 'warn',
+      danger: logs()[logs().length - 1]?.type === 'error'
+    }"
+  >
+    {{ logs()[logs().length - 1]?.message }}
+  </div>
+</div>
+
+}
+<div class="connection-status" [class.connected]="connectionState">
+  <span class="dot"></span>
+  <span class="label">
+    {{ connectionState }}
+  </span>
+</div>
+
+@if(true){
+<div class="content">
+  <div
+    class="side-panel"
+    [ngClass]="{
+      open: chathidden
+    }"
+  >
+    <div class="screen-share">
+      <div class="video-loop">
+        <div class="video-overlay-container">
+          <video #screenVideo autoplay playsinline muted></video>
+          <div class="overlayvideo">
+            <button matButton="filled" [color]="'white'" (click)="startScreenShare()">
+              Share your screeen
+            </button>
+            <div>Overlay has been added to avoid screeen mirroring</div>
+          </div>
+        </div>
+      </div>
+      <div class="flex-btn-holder">
+        <div class="connection-holder skeleton">
+          <div class="btn-iconflex">
+            <div class="userid">
+              <mat-icon
+                class="copy-icon material-symbols-outlined btn-copy"
+                (click)="copyOffer()"
+                fontIcon="content_copy"
+                aria-label="Copy ICE candidate"
+              ></mat-icon>
+              @if(!connectedcreated){
+              <div class="connected-created">{{ status_text[status] }}</div>
+              }@else{
+              <input #userid class="userid-holder" />
+              }
+            </div>
+
+            <div>
+              <div class="icon-holder">
+                <div>
+                  <div class="icon-holder">
+                    <mat-icon
+                      class="copy-icon material-symbols-outlined btn-copy"
+                      [ngClass]="{ rotate: status === 'offer_initiated' }"
+                      (click)="createOffer()"
+                      [fontIcon]="status == 'offer_initiated' ? 'refresh' : 'arrow_forward'"
+                      class="close"
+                      aria-label="close"
+                    ></mat-icon>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="icon-holder-main">
+          <div
+            class="icon-holder"
+            [ngClass]="{
+           'icon-holder-notsharedscreen': !isScreenShareStarted(),
+        }"
+          >
+            <mat-icon
+              [ngClass]="{
+                'copy-icon': true,
+                'material-symbols-outlined': true,
+                'btn-copy': true,
+
+                disabled: !sendBtn
+              }"
+              (click)="startScreenShare()"
+              [fontIcon]="sendBtn() ? 'screen_share' : 'screen_share'"
+              aria-label="Copy ICE candidate"
+            ></mat-icon>
+          </div>
+          <div
+            class="icon-holder"
+            [ngClass]="{
+           'icon-holder-notsharedscreen': !isScreenShareStarted(),
+        }"
+          >
+            <mat-icon
+              [ngClass]="{
+                'copy-icon': true,
+                'material-symbols-outlined': true,
+                'btn-copy': true,
+
+                disabled: !sendBtn
+              }"
+              (click)="openchat()"
+              [fontIcon]="sendBtn() ? 'chat' : 'chat'"
+              aria-label="Copy ICE candidate"
+            ></mat-icon>
+          </div>
+          @if(isScreenShareStarted()){
+
+          <div class="icon-holder cancel-btn">
+            <mat-icon
+              [ngClass]="{
+                'copy-icon': true,
+                'material-symbols-outlined': true,
+                'btn-copy': true,
+                disabled: !sendBtn
+              }"
+              [fontIcon]="sendBtn() ? 'cancel' : 'cancel'"
+              (click)="stopScreenShare()"
+              aria-label="Cancel screen share"
+            ></mat-icon>
+          </div>
+          }
+        </div>
+        <div class="progress-holder">
+          <div class="progress-holder-flex">
+            <div
+              class="progress"
+              *ngFor="let step of progressSetuper(); let i = index"
+              [ngClass]="{ current: step }"
+            >
+              {{ stepLabels[i] }}
+
+
+              <div></div>
+              <mat-spinner
+                class="loader"
+                [diameter]="8"
+                *ngIf="i === firstIncompleteIndex()"
+              ></mat-spinner>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="chat-panel"
+    [ngClass]="{
+      open: chathidden
+    }"
+  >
+    <div class="chat-header">
+      <h2>Chat</h2>
+    </div>
+    <div class="messages">
+      <div *ngFor="let m of messages()" class="msg" [ngClass]="{ me: m.me }">
+        {{ m.text }}
+        <div class="time">{{ m.time }}</div>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <input
+        [(ngModel)]="messageInput"
+        (ngModelChange)="setMessageInput($event)"
+        placeholder="Type a message…"
+        [disabled]="!sendBtn"
+      />
+      <div class="chatholder">
+        <mat-icon
+          [ngClass]="{
+            'copy-icon': true,
+            'material-symbols-outlined': true,
+            'btn-copy': true,
+            disabled: !sendBtn
+          }"
+          (click)="sendMessage()"
+          [fontIcon]="sendBtn() ? 'send' : 'cancel_schedule_send'"
+          aria-label="Copy ICE candidate"
+        ></mat-icon>
+      </div>
+    </div>
+    @if(!sendBtn()){
+    <div class="overlay"></div>
+
+    }
+  </div>
+</div>
+} -->
+
+<!-- @if(logs().length){
 
 <div class="log-box">
   <div
@@ -189,4 +394,4 @@
 
   }
 </div>
-}
+} -->

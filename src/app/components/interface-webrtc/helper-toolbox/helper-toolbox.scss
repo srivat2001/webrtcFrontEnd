@@ -1,0 +1,15 @@
+.tool-kit-helper {
+  color: white;
+  display: flex;
+  justify-content: center;
+  height: auto;
+  background: #ff0000;
+  position: absolute;
+  top: -35px;
+  z-index: 3;
+  left: 7px;
+  border-radius: 20px;
+  align-items: center;
+  width: fit-content;
+  padding: 4px 23px;
+}

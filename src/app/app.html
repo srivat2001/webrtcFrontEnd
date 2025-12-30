@@ -1,9 +1,13 @@
-<div class="top-bar">
-  <a routerLink="/main" routerLinkActive="active">Main</a>
-  <a routerLink="/answer" routerLinkActive="active">Answer</a>
-  <a routerLink="/stacktrace" routerLinkActive="active">Stack Trace</a>
+<div class="navbar-time-flex">
+  <div class="top-bar">
+    <a routerLink="/main" routerLinkActive="active">Main</a>
+    <a routerLink="/answer" routerLinkActive="active">Answer</a>
+    <a routerLink="/stacktrace" routerLinkActive="active">Stack Trace</a>
+  </div>
+  @if(isStarted){
+  <div class="time">{{ GetTime }}</div>
+  }
 </div>
-
 <div class="router-container">
   <div class="route-content" [class.animate]="routeChange() > 0">
     <router-outlet #outlet="outlet"></router-outlet>

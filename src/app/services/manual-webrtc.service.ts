@@ -1,15 +1,22 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, signal } from '@angular/core';
-import { Subject, Observable } from 'rxjs';
+import { Subject, Observable, BehaviorSubject } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ManualWebrtcService {
+  constructor(private http: HttpClient) {}
+  private readonly ScreenRecordingStream = new BehaviorSubject<MediaStream | null>(null);
+  readonly ScreenRecordingstream$ = this.ScreenRecordingStream.asObservable();
+  private readonly CameraStream = new BehaviorSubject<MediaStream | null>(null);
+  readonly CameraStream$ = this.CameraStream.asObservable();
   private socket: WebSocket | null = null;
   private messageSubject = new Subject<any>();
   public messages$: Observable<any> = this.messageSubject.asObservable();
+  public timerId: any = null;
+  public seconds = 10;
   stepLabels = [
     'Offer Created',
     'ICE candidate Generated',
@@ -19,8 +26,40 @@ export class ManualWebrtcService {
   progressSetuper = signal([false, false, false, false]);
   logs = signal<{ type: 'normal' | 'warn' | 'error'; message: string }[]>([]);
 
-  constructor(private http: HttpClient) {}
+  //videoStreaming
+  get getScreenRecordingStream(): Observable<MediaStream | null> {
+    return this.ScreenRecordingstream$;
+  }
 
+  setScreenRecordingStream(stream: MediaStream | null) {
+    this.ScreenRecordingStream.next(stream);
+  }
+  ScreenRecordingStreamclear() {
+    this.ScreenRecordingStream.next(null);
+  }
+  getScreenrecordingStreamValue(): MediaStream | null {
+    return this.ScreenRecordingStream.getValue();
+  }
+  getCameraStreamValue(): MediaStream | null {
+    return this.CameraStream.getValue();
+  }
+  StopScreenRecordingStream() {
+    const stream = this.ScreenRecordingStream.getValue();
+    if (stream) {
+      console.log('Stopping screen recording stream');
+      stream.getTracks().forEach((track) => track.stop());
+    }
+    this.ScreenRecordingStream.next(null);
+  }
+  get getCameraStream(): Observable<MediaStream | null> {
+    return this.CameraStream$;
+  }
+  setCameraStream(stream: MediaStream | null) {
+    this.CameraStream.next(stream);
+  }
+  CameraStreamclear() {
+    this.CameraStream.next(null);
+  }
   // ---------------------------
   // LOGGING
   // ---------------------------
@@ -45,12 +84,14 @@ export class ManualWebrtcService {
   get wslUrl() {
     return environment.wsUrl;
   }
+
   connectPersistent(): Promise<void> {
     return new Promise((resolve, reject) => {
       this.socket = new WebSocket(`${this.wslUrl}/persist-connection`);
 
       let hasResolved = false; // prevents double trigger
       this.socket.onopen = () => {
+        console.log('WebSocket connected');
         hasResolved = true;
         this.addLog('✓ Persistent WS connected');
         this.messageSubject.next({ type: 'alert', data: 'ws_connected' });
@@ -160,7 +201,21 @@ export class ManualWebrtcService {
     }
     this.socket = null;
   }
-
+  start() {
+    if (this.timerId) return;
+    this.timerId = setInterval(() => {
+      if (this.seconds > 0) {
+        this.seconds--;
+      } else {
+        this.stop();
+      }
+    }, 1000);
+  }
+  stop() {
+    if (!this.timerId) return;
+    clearInterval(this.timerId);
+    this.timerId = null;
+  }
   // ---------------------------
   // ROOM STORAGE HELPERS
   // ---------------------------

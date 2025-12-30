@@ -1,0 +1,281 @@
+<!-- @if(logs().length){
+
+<div class="log-box">
+  <div
+    class="log-item"
+    [ngClass]="{
+      normal: logs()[logs().length - 1]?.type === 'normal',
+      warn: logs()[logs().length - 1]?.type === 'warn',
+      danger: logs()[logs().length - 1]?.type === 'error'
+    }"
+  >
+    {{ logs()[logs().length - 1]?.message }}
+  </div>
+</div>
+
+} -->
+@if(true){
+<div class="content">
+  <div
+    class="side-panel"
+    [ngClass]="{
+      open: chathidden
+    }"
+  >
+    <div class="screen-share">
+      <div class="video-loop">
+        <div class="video-overlay-container">
+          <div class="video-flex">
+            <div class="screen-record-overlay-holder">
+              <video class="screen-record-video" #screenVideo autoplay playsinline muted></video>
+              @if(!isReceivingScreen()){
+              <div class="overlayvideo">
+                @if(isScreenShareStarted()){
+                <div>Overlay has been added to avoid screeen mirroring</div>
+
+                }@else { @if(screenShareState === ScreenShareState1.Starting){
+                <app-spinner></app-spinner>
+                <h3 class="info-text">Starting screen share ...</h3>
+                }@else {
+
+                <button matButton="filled" [color]="'white'" (click)="startScreenShare()">
+                  <mat-icon
+                    [ngClass]="{
+                      'copy-icon': true,
+                      'material-symbols-outlined': true,
+                      'btn-copy': true,
+
+                      disabled: !sendBtn
+                    }"
+                    (click)="startScreenShare()"
+                    [fontIcon]="sendBtn() ? 'screen_share' : 'screen_share'"
+                    aria-label="Copy ICE candidate"
+                  ></mat-icon>
+                  Share your screeen{{ status() }}
+                </button>
+                } }
+              </div>
+              }
+            </div>
+            <div class="video-camera-container">
+              <div>
+                <video class="camera-record-video" autoplay #cameraVideo playsinline muted></video>
+              </div>
+              <div>
+                <video class="camera-record-video" autoplay #cameraVideo2 playsinline muted></video>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex-btn-holder">
+        <div class="for-animation">
+          <div
+            class="connection-holder skeleton"
+            [ngClass]="{
+              connectedcreated: status() === 'connected',
+              skeleton: status() !== 'connected'
+            }"
+          >
+            <div class="btn-iconflex">
+              <div class="userid">
+                @if(status() ==="user_id_created"){
+                <mat-icon
+                  class="copy-icon material-symbols-outlined btn-copy"
+                  fontIcon="content_copy"
+                  aria-label="Copy ICE candidate"
+                ></mat-icon>
+                } @if ( (type === 'offer' || status_text[status()] ==="user_id_created") ) {
+                @if(status() ==="nothing" || status() === "offer_initiated"){
+                <div class="connected-created">
+                  {{ status_text[status()] }}
+                </div>
+                }@else {
+                <input
+                  class="userid-holder"
+                  (input)="setRoomId($any($event.target).value)"
+                  [value]="getRoomId()"
+                  [placeholder]="'User id creating '"
+                />
+                } } @else { @if(connectedcreated){
+                <div class="connected-created">
+                  {{ status_text[status()] }}
+                </div>
+                }@else{
+                <input
+                  class="userid-holder"
+                  (input)="setRoomId($any($event.target).value)"
+                  [value]="getRoomId()"
+                  [placeholder]="'Enter the room id'"
+                />
+                } }
+              </div>
+              <div class="flex-display-center">
+                @if(status() ==="nothing" || status() === "offer_initiated"){
+                <div class="icon-holder">
+                  <div>
+                    <div class="icon-holder">
+                      <mat-icon
+                        class="copy-icon material-symbols-outlined btn-copy"
+                        [ngClass]="{ rotate: status() === 'offer_initiated' }"
+                        (click)="createOffer()"
+                        [fontIcon]="status() == 'offer_initiated' ? 'refresh' : 'arrow_forward'"
+                        class="close"
+                        aria-label="close"
+                      ></mat-icon>
+                    </div>
+                  </div>
+                </div>
+                } @if( status() === "offer_initiated" || status() === "user_id_created" ||status()
+                ==="connected" ){ @if( status() === "user_id_created" ){
+                <mat-icon
+                  class="copy-icon material-symbols-outlined btn-copy"
+                  fontIcon="content_copy"
+                  aria-label="Copy ICE candidate"
+                ></mat-icon>
+                }
+
+                <div class="icon-holder">
+                  <div>
+                    <div class="icon-holder">
+                      <mat-icon
+                        class="copy-icon material-symbols-outlined btn-copy"
+                        (click)="resetConnection()"
+                        [fontIcon]="'stop_circle'"
+                        class="close"
+                        aria-label="close"
+                      ></mat-icon>
+                    </div>
+                  </div>
+                </div>
+                }
+              </div>
+            </div>
+          </div>
+          <ng-container #alertHost></ng-container>
+        </div>
+        <div class="icon-holder-main">
+          <div
+            class="icon-holder"
+            [ngClass]="{
+           'inprogress': screenShareState !== ScreenShareState1.Idle,
+        }"
+          >
+            <mat-icon
+              [ngClass]="{
+                'copy-icon': true,
+                'material-symbols-outlined': true,
+                'btn-copy': true,
+
+                disabled: !sendBtn
+              }"
+              (click)="startScreenShare()"
+              [fontIcon]="sendBtn() ? 'screen_share' : 'screen_share'"
+              aria-label="Copy ICE candidate"
+            ></mat-icon>
+          </div>
+          <div
+            class="icon-holder"
+            [ngClass]="{
+           'icon-holder-notsharedscreen': !isScreenShareStarted(),
+        }"
+          >
+            <mat-icon
+              [ngClass]="{
+                'copy-icon': true,
+                'material-symbols-outlined': true,
+                'btn-copy': true,
+
+                disabled: !sendBtn
+              }"
+              (click)="openchat()"
+              [fontIcon]="sendBtn() ? 'chat' : 'chat'"
+              aria-label="Copy ICE candidate"
+            ></mat-icon>
+          </div>
+          @if(isScreenShareStarted()){
+          <div class="icon-holder cancel-btn">
+            <mat-icon
+              [ngClass]="{
+                'copy-icon': true,
+                'material-symbols-outlined': true,
+                'btn-copy': true,
+                disabled: !sendBtn
+              }"
+              [fontIcon]="sendBtn() ? 'cancel' : 'cancel'"
+              (click)="stopScreenShare()"
+              aria-label="Cancel screen share"
+            ></mat-icon>
+          </div>
+          } @if(isVideostarted){
+          <div class="icon-holder cancel-btn">
+            <mat-icon
+              [ngClass]="{
+                'copy-icon': true,
+                'material-symbols-outlined': true,
+                'btn-copy': true,
+                disabled: !sendBtn
+              }"
+              [fontIcon]="'stop_circle'"
+              (click)="stoprecording()"
+              aria-label="Cancel screen share"
+            ></mat-icon>
+          </div>
+          } @else {
+          <div matTooltip="Start recording the screen" class="icon-holder cancel-btn">
+            <mat-icon
+              [ngClass]="{
+                'copy-icon': true,
+                'material-symbols-outlined': true,
+                'btn-copy': true,
+                disabled: !sendBtn
+              }"
+              [fontIcon]="'album'"
+              (click)="startCamera()"
+              aria-label="Cancel screen share"
+            ></mat-icon>
+          </div>
+
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div
+    class="chat-panel"
+    [ngClass]="{
+      open: chathidden
+    }"
+  >
+    <div class="chat-header">
+      <h2>Chat</h2>
+    </div>
+    <div class="messages">
+      <div *ngFor="let m of messages" class="msg" [ngClass]="{ me: m.me }">
+        {{ m.text }}
+        <div class="time">{{ m.time }}</div>
+      </div>
+    </div>
+    <div class="chat-input-area">
+      <input placeholder="Type a message…" />
+      <div class="chatholder">
+        <mat-icon
+          [ngClass]="{
+            'copy-icon': true,
+            'material-symbols-outlined': true,
+            'btn-copy': true,
+            disabled: !sendBtn
+          }"
+          [fontIcon]="sendBtn() ? 'send' : 'cancel_schedule_send'"
+          aria-label="Copy ICE candidate"
+        ></mat-icon>
+      </div>
+    </div>
+    @if(!sendBtn()){
+    <div class="overlay"></div>
+
+    }
+  </div>
+</div>
+}
