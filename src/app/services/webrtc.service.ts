@@ -122,12 +122,12 @@ export class WebRTCService {
     if (this.pc) return;
     this.pc = new RTCPeerConnection({
       iceServers: [
-        // { urls: 'stun:stun.l.google.com:19302' },
-        // {
-        //   urls: 'turn:relay.metered.ca:443?transport=tcp',
-        //   username: 'openrelayproject',
-        //   credential: 'openrelayproject',
-        // },
+        { urls: 'stun:stun.l.google.com:19302' },
+        {
+          urls: 'turn:relay.metered.ca:443?transport=tcp',
+          username: 'openrelayproject',
+          credential: 'openrelayproject',
+        },
       ],
     });
     if (this.isOfferer()) {
