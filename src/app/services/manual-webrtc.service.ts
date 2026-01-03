@@ -1,22 +1,40 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, signal } from '@angular/core';
+import { ElementRef, Injectable, signal } from '@angular/core';
 import { Subject, Observable, BehaviorSubject } from 'rxjs';
 import { environment } from '../../environments/environment';
-
+export interface ConnectionState {
+  connectedcreated: boolean;
+  status: 'connected' | 'disconnected' | string;
+  sendBtn: boolean;
+}
 @Injectable({
   providedIn: 'root',
 })
 export class ManualWebrtcService {
   constructor(private http: HttpClient) {}
-  private readonly ScreenRecordingStream = new BehaviorSubject<MediaStream | null>(null);
+  private readonly ScreenRecordingStream = new BehaviorSubject<MediaStream>(new MediaStream());
   readonly ScreenRecordingstream$ = this.ScreenRecordingStream.asObservable();
-  private readonly CameraStream = new BehaviorSubject<MediaStream | null>(null);
+  private readonly CameraStream = new BehaviorSubject<MediaStream>(new MediaStream());
   readonly CameraStream$ = this.CameraStream.asObservable();
   private socket: WebSocket | null = null;
   private messageSubject = new Subject<any>();
   public messages$: Observable<any> = this.messageSubject.asObservable();
+  public connStateData = new BehaviorSubject<ConnectionState>({
+    connectedcreated: false,
+    status: 'nothing',
+    sendBtn: false,
+  });
+  updateConnectionState(partial: Partial<ConnectionState>) {
+    const current = this.connStateData.value;
+    this.connStateData.next({
+      ...current,
+      ...partial,
+    });
+  }
+  //public connStateData$ = this.connStateData.asObservable();
   public timerId: any = null;
   public seconds = 10;
+  public ErrorMessageSubject = new BehaviorSubject('');
   stepLabels = [
     'Offer Created',
     'ICE candidate Generated',
@@ -31,34 +49,55 @@ export class ManualWebrtcService {
     return this.ScreenRecordingstream$;
   }
 
-  setScreenRecordingStream(stream: MediaStream | null) {
+  setScreenRecordingStream(stream: MediaStream) {
     this.ScreenRecordingStream.next(stream);
   }
-  ScreenRecordingStreamclear() {
-    this.ScreenRecordingStream.next(null);
-  }
-  getScreenrecordingStreamValue(): MediaStream | null {
+
+  getScreenrecordingStreamValue(): MediaStream {
     return this.ScreenRecordingStream.getValue();
   }
-  getCameraStreamValue(): MediaStream | null {
+  getCameraStreamValue(): MediaStream {
     return this.CameraStream.getValue();
   }
   StopScreenRecordingStream() {
     const stream = this.ScreenRecordingStream.getValue();
     if (stream) {
-      console.log('Stopping screen recording stream');
-      stream.getTracks().forEach((track) => track.stop());
+      stream.getVideoTracks().forEach((t) => {
+        t.stop();
+        stream.removeTrack(t);
+      });
     }
-    this.ScreenRecordingStream.next(null);
+  }
+  public primeVideosOnce(
+    cameraVideo: ElementRef<HTMLVideoElement>,
+    screenVideo: ElementRef<HTMLVideoElement>
+  ) {
+    this.prime(cameraVideo?.nativeElement, this.CameraStream.value);
+    this.prime(screenVideo?.nativeElement, this.ScreenRecordingStream.value);
+  }
+
+  private prime(video: HTMLVideoElement | null, stream: MediaStream) {
+    if (!video) return;
+
+    video.srcObject = stream;
+    video.muted = true;
+    video.autoplay = true;
+    video.playsInline = true;
+
+    video.play().catch(() => {});
   }
   get getCameraStream(): Observable<MediaStream | null> {
     return this.CameraStream$;
   }
-  setCameraStream(stream: MediaStream | null) {
+  setCameraStream(stream: MediaStream) {
     this.CameraStream.next(stream);
   }
   CameraStreamclear() {
-    this.CameraStream.next(null);
+    const stream = this.CameraStream.value;
+    stream.getVideoTracks().forEach((t) => {
+      t.stop();
+      stream.removeTrack(t);
+    });
   }
   // ---------------------------
   // LOGGING
@@ -87,80 +126,87 @@ export class ManualWebrtcService {
 
   connectPersistent(): Promise<void> {
     return new Promise((resolve, reject) => {
-      this.socket = new WebSocket(`${this.wslUrl}/persist-connection`);
+      // ✅ ONE websocket for everything
+      this.socket = new WebSocket(this.wslUrl);
 
-      let hasResolved = false; // prevents double trigger
+      let settled = false;
+
       this.socket.onopen = () => {
+        if (settled) return;
+        settled = true;
+
+        this.addLog('✓ WebSocket connected');
         console.log('WebSocket connected');
-        hasResolved = true;
-        this.addLog('✓ Persistent WS connected');
-        this.messageSubject.next({ type: 'alert', data: 'ws_connected' });
+
+        // Notify listeners
+        this.messageSubject.next({
+          type: 'system',
+          data: 'ws_connected',
+        });
+
         resolve();
       };
 
       this.socket.onerror = (err) => {
-        if (hasResolved) return; // ignore runtime errors after connect
-        this.stepLabels.push('WS error - server unreachable');
-        this.progressSetuper.set([true, true, true, true, false]);
-        this.addLog('✗ WS error - server unreachable');
+        if (settled) return;
+        settled = true;
+
+        console.error('WebSocket error', err);
+        this.addLog('✗ WebSocket error');
 
         this.messageSubject.next({
           type: 'error',
           data: 'server_unreachable',
         });
-
-        hasResolved = true;
+        this.updateConnectionState({ status: 'nothing' });
+        this.ErrorMessageSubject.next('Backend server error');
         reject(new Error('server_unreachable'));
       };
 
       this.socket.onclose = (ev) => {
-        if (hasResolved) {
-          this.addLog('✗ Persistent WS closed');
+        // Closed AFTER open → normal runtime close
+        if (settled) {
+          this.addLog('✗ WebSocket closed');
+          this.messageSubject.next({
+            type: 'system',
+            data: 'ws_closed',
+          });
           return;
         }
 
-        // close BEFORE open == connection refused
-        this.addLog('✗ Server offline (WS closed before handshake)');
+        // Closed BEFORE open → server offline
+        settled = true;
 
+        this.addLog('✗ Server offline (WS closed before open)');
         this.messageSubject.next({
           type: 'error',
           data: 'server_offline',
         });
 
-        hasResolved = true;
         reject(new Error('server_offline'));
       };
 
       this.socket.onmessage = (event) => {
+        let parsed: any;
+
         try {
-          const parsed = JSON.parse(event.data);
-
-          if (!parsed?.type) {
-            this.addLog('✗ Invalid payload: missing type');
-            this.messageSubject.next({ type: 'error', data: 'invalid_payload' });
-            return;
-          }
-
-          if (parsed.type === 'error') {
-            this.addLog(`✗ ${parsed.data}`);
-            this.messageSubject.next(parsed);
-            return;
-          }
-
-          if (parsed.type === 'alert') {
-            this.addLog(`⚠️ ${parsed.data}`);
-            this.messageSubject.next(parsed);
-            return;
-          }
-
-          if (parsed.type === 'response') {
-            this.addLog(`✓ Response received`);
-            this.messageSubject.next(parsed);
-            return;
-          }
+          parsed = JSON.parse(event.data);
         } catch {
           this.addLog('✗ Unparsed WS message');
+          return;
         }
+
+        if (!parsed?.type) {
+          this.addLog('✗ Invalid WS payload (missing type)');
+          this.messageSubject.next({
+            type: 'error',
+            data: 'invalid_payload',
+          });
+          return;
+        }
+
+        // ✅ ALL inbound WS traffic flows through here
+        this.messageSubject.next(parsed);
       };
     });
   }

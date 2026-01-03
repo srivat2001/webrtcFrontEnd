@@ -111,15 +111,23 @@
                 } }
               </div>
               <div class="flex-display-center">
-                @if(status() ==="nothing" || status() === "offer_initiated"){
+                @if(status() ==="nothing" || status() === "offer_initiated" ||
+                status()==='connecting_to_existing'){
                 <div class="icon-holder">
                   <div>
                     <div class="icon-holder">
                       <mat-icon
                         class="copy-icon material-symbols-outlined btn-copy"
-                        [ngClass]="{ rotate: status() === 'offer_initiated' }"
+                        [ngClass]="{
+                          rotate:
+                            status() === 'offer_initiated' || status() === 'connecting_to_existing'
+                        }"
                         (click)="createOffer()"
-                        [fontIcon]="status() == 'offer_initiated' ? 'refresh' : 'arrow_forward'"
+                        [fontIcon]="
+                          status() == 'offer_initiated' || status() == 'connecting_to_existing'
+                            ? 'refresh'
+                            : 'arrow_forward'
+                        "
                         class="close"
                         aria-label="close"
                       ></mat-icon>

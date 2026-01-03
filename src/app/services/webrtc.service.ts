@@ -9,11 +9,6 @@ export interface VideoUpdateEvent {
   type?: string;
   isReceivingScreen?: boolean;
 }
-export interface ConnectionState {
-  connectedcreated: boolean;
-  status: 'connected' | 'disconnected' | string;
-  sendBtn: boolean;
-}
 
 @Injectable({
   providedIn: 'root',
@@ -31,7 +26,6 @@ export class WebRTCService {
   private answerText = signal<any>(null);
   private remoteIceText = signal<string[]>([]);
   private videoUpdateSubject = new Subject<VideoUpdateEvent>();
-  private generdateSharedSecret = '';
   private OfferCreated = signal(false);
   videoUpdate$ = this.videoUpdateSubject.asObservable();
   private roomname = signal('');
@@ -42,12 +36,7 @@ export class WebRTCService {
   messageInput = signal('');
   private wsSub: Subscription | null = null;
   private role = 'offer';
-  private connStateData = new BehaviorSubject<ConnectionState>({
-    connectedcreated: false,
-    status: 'nothing',
-    sendBtn: false,
-  });
-  connStateData$ = this.connStateData.asObservable();
+
   private isNegotiating = false;
   private answerApplied = false;
   constructor(private ManualWebrtcService: ManualWebrtcService) {
@@ -57,27 +46,21 @@ export class WebRTCService {
         return;
       }
       this.isScreenShareStarted.set(true);
-      if (this.pc!.connectionState === 'connected') {
+      if (this.pc && this.pc!.connectionState === 'connected') {
+        console.log('send to ');
         const msg = JSON.stringify({ type: 'video-send-indent', _contentType: 'screen' });
         this.channel?.send(msg);
       }
     });
     this.ManualWebrtcService.getCameraStream.subscribe((stream) => {
       if (!stream) return;
-      if (this.pc!.connectionState === 'connected') {
+      if (this.pc && this.pc!.connectionState === 'connected') {
         const msg = JSON.stringify({ type: 'video-send-indent', _contentType: 'camera' });
         this.channel?.send(msg);
       }
     });
   }
 
-  updateConnectionState(partial: Partial<ConnectionState>) {
-    const current = this.connStateData.value;
-    this.connStateData.next({
-      ...current,
-      ...partial,
-    });
-  }
   setOfferText(offer: string) {
     this.offerText.set(offer);
   }
@@ -139,31 +122,64 @@ export class WebRTCService {
     if (this.pc) return;
     this.pc = new RTCPeerConnection({
       iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        {
-          urls: 'turn:relay.metered.ca:443?transport=tcp',
-          username: 'openrelayproject',
-          credential: 'openrelayproject',
-        },
+        // { urls: 'stun:stun.l.google.com:19302' },
+        // {
+        //   urls: 'turn:relay.metered.ca:443?transport=tcp',
+        //   username: 'openrelayproject',
+        //   credential: 'openrelayproject',
+        // },
       ],
     });
-    this.channel = this.pc.createDataChannel('chat');
-    this.setupDataChannel(this.channel);
-    this.pc!.ondatachannel = (event) => {
-      this.channel = event.channel;
+    if (this.isOfferer()) {
+      this.channel = this.pc.createDataChannel('chat');
       this.setupDataChannel(this.channel);
+    } else {
+      this.pc!.ondatachannel = (event) => {
+        this.channel = event.channel;
+        this.setupDataChannel(this.channel);
+      };
+    }
+
+    let isConnectionCreated = false;
+    this.pc.oniceconnectionstatechange = (e) => {
+      console.log(this.pc?.connectionState);
+      if (this.pc?.connectionState === 'connected') {
+        this.connectedcreated = true;
+        this.ManualWebrtcService.updateConnectionState({
+          status: 'connected',
+          connectedcreated: true,
+          sendBtn: true,
+        });
+      }
     };
+    this.pc.oniceconnectionstatechange = () => {
+      console.log('ICE state:', this.pc!.iceConnectionState, performance.now());
+      if (this.pc && this.pc!.iceConnectionState === 'connected') {
+        this.inspectIce(this.pc);
+      }
+    };
+
+    this.pc.onicegatheringstatechange = () => {
+      console.log('ICE gathering:', this.pc!.iceGatheringState, performance.now());
+    };
+
+    this.pc.onconnectionstatechange = () => {
+      console.log('PC state:', this.pc!.connectionState, performance.now());
+    };
+
     this.pc!.onicecandidate = (e) => {
       if (!e.candidate) return;
+      //    if (e.candidate.candidate.includes(' tcp ')) return;
       this.localIceCandidates.update((c) => [...c, JSON.stringify(e.candidate)]);
       clearTimeout(this.iceTimer);
       this.iceTimer = setTimeout(() => {
-        if (this.role === 'offer') {
+        if (this.role === 'offer' && !isConnectionCreated) {
           this.ManualWebrtcService.connectPersistent();
+          isConnectionCreated = true;
         } else {
           this.afterIceCandidatesCreation();
         }
-      }, 2000);
+      }, 0);
     };
     this.pc!.onconnectionstatechange = () => {
       this.connectionStateSubject.next(this.pc!.connectionState);
@@ -175,6 +191,7 @@ export class WebRTCService {
       this.isNegotiating = true;
 
       try {
+        console.log('renociagtiion');
         const offer = await this.pc.createOffer();
         await this.pc.setLocalDescription(offer);
         this.channel.send(
@@ -203,6 +220,33 @@ export class WebRTCService {
       this.emitVideoUpdate(stream, this.toReciveStreamType, true);
     };
   }
+  async inspectIce(pc: RTCPeerConnection) {
+    const stats = await pc.getStats();
+
+    let selectedPair: any = null;
+    let localCandidate: any = null;
+    let remoteCandidate: any = null;
+
+    stats.forEach((report) => {
+      if (report.type === 'transport' && report.selectedCandidatePairId) {
+        selectedPair = stats.get(report.selectedCandidatePairId);
+      }
+    });
+
+    if (!selectedPair) {
+      console.log('❌ No selected candidate pair yet');
+      return;
+    }
+
+    localCandidate = stats.get(selectedPair.localCandidateId);
+    remoteCandidate = stats.get(selectedPair.remoteCandidateId);
+
+    console.log('✅ SELECTED CANDIDATE PAIR');
+    console.log('Local Candidate:', localCandidate);
+    console.log('Remote Candidate:', remoteCandidate);
+    console.log('Candidate Pair:', selectedPair);
+  }
+
   afterIceCandidatesCreation() {
     this.applyAnswer(this.roomname(), this.answerText(), this.localIceCandidates());
   }
@@ -212,29 +256,38 @@ export class WebRTCService {
     roomSecret?: string,
     event?: Event
   ) => {
+    this.ManualWebrtcService.updateConnectionState({
+      status: 'connecting_to_existing',
+    });
     this.createPeerIfNeeded();
+    if (!this.roomId()) {
+      this.ManualWebrtcService.updateConnectionState({ status: 'nothing' });
+      this.ManualWebrtcService.ErrorMessageSubject.next('Enter Room id');
+    }
+    this.ManualWebrtcService.connectPersistent();
+    this.initialiseWebsocket();
     console.log('Connecting to existing connection...');
     if (fromStorage && event) {
       event.preventDefault();
       //  this.userid.nativeElement.value = roomid + '$' + roomSecret;
     }
-    const userid = this.roomId();
-    if (!(userid === '')) {
-      const result = await this.fetchOffer(userid);
-      if (result.type === 'error' || result.data === 'room-not-found') {
-        this.ManualWebrtcService.addLog('✗ Room not found');
-        //   this.webrtcUi.showAlert();
-      } else {
-        console.log('Offer fetched:', result);
-        this.offerText.set(result.data.roomdata.OffererData.offer);
-        this.roomname.set(userid);
-        this.createAnswer().then((val) => {
-          this.ManualWebrtcService.addLog('✗ Offer Added');
-        });
-      }
-    } else {
-      //this.webrtcUi.showAlert();
-    }
+
+    // if (!(userid === '')) {
+    //   const result = await this.fetchOffer(userid);
+    //   if (result.type === 'error' || result.data === 'room-not-found') {
+    //     this.ManualWebrtcService.addLog('✗ Room not found');
+    //     //   this.webrtcUi.showAlert();
+    //   } else {
+    //     console.log('Offer fetched:', result);
+    //     this.offerText.set(result.data.roomdata.OffererData.offer);
+    //     this.roomname.set(userid);
+    //     this.createAnswer().then((val) => {
+    //       this.ManualWebrtcService.addLog('✗ Offer Added');
+    //     });
+    //   }
+    // } else {
+    //   //this.webrtcUi.showAlert();
+    // }
   };
 
   private createAnswer = async (): Promise<void> => {
@@ -247,6 +300,11 @@ export class WebRTCService {
       if (this.offerText()) {
         const offer: any = JSON.parse(this.offerText()); // non-null assertion
         await this.pc.setRemoteDescription(offer);
+        const offerIceArray: string[] = this.remoteIceText(); // your array
+        for (const iceStr of offerIceArray) {
+          const iceObj: RTCIceCandidateInit = JSON.parse(iceStr);
+          await this.pc.addIceCandidate(iceObj);
+        }
         const ans = await this.pc.createAnswer();
         await this.pc.setLocalDescription(ans);
         this.answerText.set(JSON.stringify(ans, null, 2));
@@ -258,49 +316,24 @@ export class WebRTCService {
       alert('Error creating answer: ' + (e as any).message);
     }
   };
-  fetchOffer(roomname: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const ws = new WebSocket(`${this.wslUrl}/get-roomdata`);
-      ws.onopen = () => {
-        ws.send(
-          JSON.stringify({
-            roomname: roomname,
-          })
-        );
-      };
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        resolve(data);
-        ws.close(); // ← CLOSE AFTER RECEIVING!
-      };
-      ws.onerror = reject;
+  fetchOffer(roomname: string): void {
+    this.ManualWebrtcService.sendMessage({
+      type: 'get-roomdata',
+      payload: { roomname },
     });
   }
-  applyAnswer(
-    roomname: string,
-    answer: RTCSessionDescriptionInit,
-    iceCandidates: any[]
-  ): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const ws = new WebSocket(`${this.wslUrl}/answer-connection`);
-      ws.onopen = () => {
-        ws.send(
-          JSON.stringify({
-            roomname,
-            answerSDP: answer,
-            asnwerICEcandidates: iceCandidates,
-          })
-        );
-      };
-      ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        resolve(data);
-        ws.close(); // close after receiving response
-      };
 
-      ws.onerror = reject;
+  applyAnswer(roomname: string, answer: RTCSessionDescriptionInit, iceCandidates: any[]): void {
+    this.ManualWebrtcService.sendMessage({
+      type: 'answer-connection',
+      payload: {
+        roomname,
+        answerSDP: answer,
+        asnwerICEcandidates: iceCandidates,
+      },
     });
   }
+
   sendStreamifExists = async () => {
     if (this.ManualWebrtcService.getCameraStreamValue()) {
       await new Promise<string>((resolve) => {
@@ -321,33 +354,27 @@ export class WebRTCService {
     if (!this.pc) return;
 
     // prevent duplicate answer application
-    if (desc.type === 'answer' && this.answerApplied) {
+    if (this.answerApplied) {
       console.warn('Answer already applied, skipping');
       return;
     }
-
-    // enforce WebRTC state machine
-    if (desc.type === 'answer' && this.pc.signalingState !== 'have-local-offer') {
-      console.warn('Skipping answer, wrong state:', this.pc.signalingState);
-      return;
-    }
-
-    if (desc.type === 'offer' && this.pc.signalingState !== 'stable') {
-      console.warn('Skipping offer, wrong state:', this.pc.signalingState);
-      return;
-    }
-
     await this.pc.setRemoteDescription(desc);
-
+    console.log('Setting remote desc');
     if (desc.type === 'answer') {
       this.answerApplied = true;
     }
+    this.wsSub?.unsubscribe();
   }
 
   private setupDataChannel(channel: RTCDataChannel) {
     channel.onopen = () => {
+      console.log('connected', new Date());
       this.connectedcreated = true;
-      this.updateConnectionState({ status: 'connected', connectedcreated: true, sendBtn: true });
+      this.ManualWebrtcService.updateConnectionState({
+        status: 'connected',
+        connectedcreated: true,
+        sendBtn: true,
+      });
       const payload = {
         type: 'connection-established',
         reconnectionSecret: this.roomname() + '$' + this.generateReconnectionSecret(),
@@ -359,9 +386,12 @@ export class WebRTCService {
     channel.onmessage = async (e) => {
       const msg = JSON.parse(e.data);
       if (msg.type === 'negotiation-offer') {
+        this.answerApplied = false;
         await this.safeSetRemoteDescription(msg.sdp);
         const answer = await this.pc!.createAnswer();
         await this.pc!.setLocalDescription(answer);
+        console.log('renocoiation offer');
+
         this.channel!.send(
           JSON.stringify({
             type: 'negotiation-answer',
@@ -371,12 +401,16 @@ export class WebRTCService {
         return;
       }
       if (msg.type === 'negotiation-answer') {
+        this.answerApplied = false;
+
         await this.safeSetRemoteDescription(msg.sdp);
+        console.log('renocoiation answer');
         this.isNegotiating = false;
         return;
       }
       if (msg.type === 'ack-video-send-indent') {
         if (msg._contentType === 'camera' && this.ManualWebrtcService.getCameraStreamValue()) {
+          console.log('added track camera');
           this.pc!.addTrack(
             (this.ManualWebrtcService.getCameraStreamValue() as MediaStream).getVideoTracks()[0]
           );
@@ -385,6 +419,7 @@ export class WebRTCService {
           msg._contentType === 'screen' &&
           this.ManualWebrtcService.getScreenrecordingStreamValue()
         ) {
+          console.log('added track screen');
           this.pc!.addTrack(
             this.ManualWebrtcService.getScreenrecordingStreamValue()!.getVideoTracks()[0]
           );
@@ -399,12 +434,13 @@ export class WebRTCService {
     };
 
     channel.onclose = () => {
-      this.updateConnectionState({
+      this.ManualWebrtcService.updateConnectionState({
         status: 'nothing',
         connectedcreated: false,
         sendBtn: false,
       });
       console.log('Channel closed!');
+      this.resetWebRTC();
       //  this.sendBtn.set(false);
     };
   }
@@ -426,10 +462,9 @@ export class WebRTCService {
     trySend();
   }
   createOffer = async (): Promise<void> => {
-    this.updateConnectionState({
+    this.ManualWebrtcService.updateConnectionState({
       status: 'offer_initiated',
     });
-
     this.initialiseWebsocket();
     this.createPeerIfNeeded();
     const offer = await this.pc!.createOffer();
@@ -440,28 +475,32 @@ export class WebRTCService {
   };
   private initialiseWebsocket(): void {
     this.wsSub?.unsubscribe();
-    this.wsSub = this.ManualWebrtcService.listenMessages().subscribe((val) => {
+    this.wsSub = this.ManualWebrtcService.listenMessages().subscribe(async (val) => {
       console.log('WS Message received:', val);
       const data = val.data;
       if (!data) return;
-      if (data === 'ws_connected') {
-        this.generdateSharedSecret = '';
-        this.ManualWebrtcService.sendMessage({
-          type: 'request',
-          data: this.generdateSharedSecret ? { roomname: this.generdateSharedSecret } : {},
-        });
+      if (this.isOfferer() && data.forWho === 'answer') {
         return;
+      }
+      if (data === 'ws_connected' && this.isOfferer()) {
+        this.sendOfferAndIce('', this.getOfferText(), this.getLocalIceCandidates());
+        return;
+      } else if (data === 'ws_connected' && !this.isOfferer()) {
+        console.log('calling from answer');
+        const userid = this.roomId();
+        this.fetchOffer(userid);
       }
 
       switch (data.status) {
-        case 'room-created':
-          console.log('Room created:', data.roomname);
-          this.generdateSharedSecret = data.roomname;
-          this.sendOfferAndIce(
-            data.roomname,
-            this.getOfferText(),
-            this.getLocalIceCandidates()
-          ).then(console.log);
+        case 'offer_stored':
+          console.log('Offer added, waiting for answer...');
+          this.connectedcreated = true;
+          setTimeout(() => {
+            this.roomId.set(data.roomname);
+            this.ManualWebrtcService.updateConnectionState({
+              status: 'user_id_created',
+            });
+          }, 1000);
           break;
 
         case 'answer_ready':
@@ -469,40 +508,63 @@ export class WebRTCService {
           this.setRemoteIceText(data.room.AnswererData.ICEcandidate);
           this.ApplyRemoteDescAndIce();
           break;
+        case 'roomname_is_required':
+          this.ManualWebrtcService.ErrorMessageSubject.next('Room Doesnt exists');
+          this.ManualWebrtcService.updateConnectionState({ status: 'nothing' });
+          return;
 
-        case 'offer_added':
-          console.log('Offer added, waiting for answer...');
-          this.connectedcreated = true;
-          setTimeout(() => {
-            this.roomId.set(data.roomname);
-            this.updateConnectionState({
-              status: 'user_id_created',
-            });
-          }, 1000);
           break;
-
+        case 'offerdata_fetched':
+          if (!this.isOfferer()) {
+            const result = data.roomdata;
+            this.setOfferText(result.OffererData.offer);
+            this.setRemoteIceText(result.OffererData.ICEcandidate);
+            this.roomname.set(data.roomname);
+            this.createAnswer().then((val) => {
+              this.ManualWebrtcService.addLog('✗ Offer Added');
+            });
+          }
+          break;
         default:
           console.warn('Unhandled WS message', data);
       }
     });
   }
-  sendOfferAndIce(roomname: string, offer: any, ice: any): Promise<RoomResponse> {
-    return new Promise((resolve, reject) => {
-      const ws = new WebSocket(`${this.wslUrl}/create-connection`);
-      ws.onopen = () => ws.send(JSON.stringify({ roomname, offer, ICEcandidate: ice }));
-      ws.onmessage = (e) => {
-        resolve(JSON.parse(e.data));
-        ws.close();
-      };
-      ws.onerror = reject;
+  // if (!(userid === '')) {
+  //   const result = await this.fetchOffer(userid);
+  //   if (result.type === 'error' || result.data === 'room-not-found') {
+  //     this.ManualWebrtcService.addLog('✗ Room not found');
+  //     //   this.webrtcUi.showAlert();
+  //   } else {
+  //     console.log('Offer fetched:', result);
+  //     this.offerText.set(result.data.roomdata.OffererData.offer);
+  //     this.roomname.set(userid);
+  //     this.createAnswer().then((val) => {
+  //       this.ManualWebrtcService.addLog('✗ Offer Added');
+  //     });
+  //   }
+  // } else {
+  //   //this.webrtcUi.showAlert();
+  // }
+
+  sendOfferAndIce(roomname: string, offer: any, ice: any): void {
+    this.ManualWebrtcService.sendMessage({
+      type: 'create-connection',
+      payload: {
+        roomname,
+        offer,
+        ICEcandidate: ice,
+      },
     });
   }
+
   async ApplyRemoteDescAndIce() {
     if (!this.pc || !this.answerText) {
       this.ManualWebrtcService.addLog('✗ Answer empty');
       return alert('Please paste answer first');
     }
     await this.safeSetRemoteDescription(JSON.parse(this.getAnswerText()));
+
     this.ManualWebrtcService.addLog('✓ Answer applied');
     if (!this.getRTCConnection()) return alert('PC not ready');
     for (const item of this.getRemoteIceText()) {
@@ -514,7 +576,7 @@ export class WebRTCService {
   resetWebRTC(close = false) {
     console.log('🔄 Resetting WebRTC connection...');
     this.ManualWebrtcService.closeSocket();
-
+    this.answerApplied = false;
     this.pc?.close();
     this.pc = null;
     this.channel?.close();
@@ -525,7 +587,7 @@ export class WebRTCService {
     this.remoteIceText.set([]);
     this.roomId.set('');
     this.sendBtn.set(false);
-    this.updateConnectionState({ status: 'nothing' });
+    this.ManualWebrtcService.updateConnectionState({ status: 'nothing' });
     console.log('✅ WebRTC fully reset');
   }
 }

@@ -1,8 +1,12 @@
 import {
+  AfterViewInit,
   Component,
+  ComponentRef,
   ElementRef,
+  inject,
   Inject,
   Input,
+  inputBinding,
   signal,
   Signal,
   ViewChild,
@@ -30,17 +34,19 @@ export enum ScreenShareState {
   templateUrl: './webrtc-ui.html',
   styleUrl: './webrtc-ui.scss',
 })
-export class WebrtcUiComponent {
+export class WebrtcUiComponent implements AfterViewInit {
   @Input() type: 'offer' | 'answer' = 'offer';
   messages: any = [];
   sendBtn = signal(true);
   isScreenShareStarted = signal(false);
   connectionState = 'Disconnected';
+  private vcr = inject(ViewContainerRef);
+  private helperTollboxRef?: ComponentRef<HelperToolbox>; // ← store it here
   chathidden = true;
   connectedcreated = false;
   status = signal('nothing');
-  @ViewChild('screenVideo') screenVideo?: ElementRef<HTMLVideoElement>;
-  @ViewChild('cameraVideo') cameraVideo?: ElementRef<HTMLVideoElement>;
+  @ViewChild('screenVideo', { static: false }) screenVideo?: ElementRef<HTMLVideoElement>;
+  @ViewChild('cameraVideo', { static: false }) cameraVideo?: ElementRef<HTMLVideoElement>;
   status_text: Record<string, string> = {
     nothing: 'Enter room iD',
     connected: 'Connected to Room',
@@ -57,6 +63,8 @@ export class WebrtcUiComponent {
   private _videoStream: MediaStream | null = null;
   chunks: Blob[] = [];
   mediaRecorder!: MediaRecorder;
+  ErrorMessage = signal('');
+  @ViewChild('alertHost', { read: ViewContainerRef }) alertHost?: ViewContainerRef;
   constructor(
     public dialog: MatDialog,
     private readonly manualWebrtcService: ManualWebrtcService,
@@ -65,10 +73,17 @@ export class WebrtcUiComponent {
     this.webrtcService.videoUpdate$.subscribe(({ stream, type, isReceivingScreen }) => {
       this.updateVideo(stream, type, isReceivingScreen);
     });
-    this.webrtcService.connStateData$.subscribe((state) => {
+    this.manualWebrtcService.ErrorMessageSubject.subscribe((message) => {
+      this.ErrorMessage.set(message);
+      this.showAlert();
+    });
+
+    this.manualWebrtcService.connStateData.pipe().subscribe((state) => {
       this.connectedcreated = state.connectedcreated;
       this.status.set(state.status);
       this.sendBtn.set(state.sendBtn);
+
+      // show dialog, toast, etc. here
     });
   }
   get logs() {
@@ -81,19 +96,28 @@ export class WebrtcUiComponent {
       this.status_text['nothing'] = 'Enter room iD';
     }
   }
+  ngAfterViewInit() {
+    if (this.screenVideo && this.cameraVideo) {
+      this.manualWebrtcService.primeVideosOnce(this.screenVideo, this.cameraVideo);
+    }
+  }
   public showAlert() {
-    this.alertHost.clear();
-    this.alertHost.createComponent(HelperToolbox);
+    this.helperTollboxRef = this.alertHost?.createComponent(HelperToolbox, {
+      bindings: [inputBinding('Errormessage', this.ErrorMessage)],
+    });
+
+    setTimeout(() => {
+      this.helperTollboxRef?.destroy();
+    }, 10000000);
+
     setTimeout(() => {
       this.hideAlert();
     }, 10000);
   }
   hideAlert() {
-    this.alertHost.clear();
+    this.helperTollboxRef?.destroy();
   }
-  @ViewChild('alertHost', { read: ViewContainerRef })
-  alertHost!: ViewContainerRef;
-  @Input()
+
   set videoStream(stream: MediaStream | null) {
     this._videoStream = stream;
     this.updateVideo(stream);

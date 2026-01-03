@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 @Component({
   selector: 'app-helper-toolbox',
@@ -7,5 +7,5 @@ import { Component } from '@angular/core';
   styleUrl: './helper-toolbox.scss',
 })
 export class HelperToolbox {
-
+  @Input() Errormessage = '';
 }
