@@ -5,6 +5,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "start:wifi": "ng serve --configuration=wifi",
     "build": "ng build",
     "buildProd": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",

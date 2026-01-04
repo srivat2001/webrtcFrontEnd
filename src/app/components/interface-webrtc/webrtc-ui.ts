@@ -20,13 +20,7 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dial
 import { ManualWebrtcService } from '../../services/manual-webrtc.service';
 import { Spinner } from '../../assets/spinner/spinner';
 import { WebRTCService } from '../../services/webrtc.service';
-export enum ScreenShareState {
-  Idle = 'IDLE',
-  Starting = 'STARTING',
-  InProgress = 'IN_PROGRESS',
-  Stopped = 'STOPPED',
-  Failed = 'FAILED',
-}
+import { MediaState } from '../../models/media-state.model';
 @Component({
   selector: 'app-webrtc-ui',
   standalone: true,
@@ -45,8 +39,11 @@ export class WebrtcUiComponent implements AfterViewInit {
   chathidden = true;
   connectedcreated = false;
   status = signal('nothing');
+  @ViewChild('alertHost', { read: ViewContainerRef }) alertHost?: ViewContainerRef;
   @ViewChild('screenVideo', { static: false }) screenVideo?: ElementRef<HTMLVideoElement>;
   @ViewChild('cameraVideo', { static: false }) cameraVideo?: ElementRef<HTMLVideoElement>;
+  @ViewChild('cameraVideo2', { static: false }) cameraVideo2?: ElementRef<HTMLVideoElement>;
+  @ViewChild('audio', { static: false }) AudioRef?: ElementRef<HTMLAudioElement>;
   status_text: Record<string, string> = {
     nothing: 'Enter room iD',
     connected: 'Connected to Room',
@@ -54,22 +51,35 @@ export class WebrtcUiComponent implements AfterViewInit {
     user_id_created: 'Connection created! Share your Room ID',
   };
   isReceivingScreen = signal(false);
-  screenShareState: ScreenShareState = ScreenShareState.Idle;
-  ScreenShareState1 = ScreenShareState;
+  public current_screenShareState: MediaState = MediaState.Idle;
+  public screenShareState: typeof MediaState = MediaState;
+  public currentAudiostate: MediaState = MediaState.Idle;
+  public AudioState: typeof MediaState = MediaState;
+  public current_ReciverAudiostate: MediaState = MediaState.Idle;
+  public ReciverAudioState: typeof MediaState = MediaState;
   animal!: string;
   name!: string;
   isVideostarted = false;
   private cameraStream: MediaStream | null = null;
   private _videoStream: MediaStream | null = null;
+  private ReciverAudioStream: MediaStream | null = new MediaStream();
   chunks: Blob[] = [];
   mediaRecorder!: MediaRecorder;
   ErrorMessage = signal('');
-  @ViewChild('alertHost', { read: ViewContainerRef }) alertHost?: ViewContainerRef;
   constructor(
     public dialog: MatDialog,
     private readonly manualWebrtcService: ManualWebrtcService,
     private readonly webrtcService: WebRTCService
-  ) {
+  ) {}
+  get logs() {
+    return [];
+  }
+  ngOnInit() {
+    if (this.type === 'offer') {
+      this.status_text['nothing'] = 'Create a connection';
+    } else {
+      this.status_text['nothing'] = 'Enter room iD';
+    }
     this.webrtcService.videoUpdate$.subscribe(({ stream, type, isReceivingScreen }) => {
       this.updateVideo(stream, type, isReceivingScreen);
     });
@@ -86,19 +96,23 @@ export class WebrtcUiComponent implements AfterViewInit {
       // show dialog, toast, etc. here
     });
   }
-  get logs() {
-    return [];
-  }
-  ngOnInit() {
-    if (this.type === 'offer') {
-      this.status_text['nothing'] = 'Create a connection';
-    } else {
-      this.status_text['nothing'] = 'Enter room iD';
-    }
-  }
-  ngAfterViewInit() {
-    if (this.screenVideo && this.cameraVideo) {
-      this.manualWebrtcService.primeVideosOnce(this.screenVideo, this.cameraVideo);
+  ngAfterViewInit() {}
+  Firstclick = true;
+  startMedia() {
+    if (
+      this.Firstclick &&
+      this.screenVideo &&
+      this.cameraVideo &&
+      this.cameraVideo2 &&
+      this.AudioRef
+    ) {
+      this.manualWebrtcService.primeVideosOnce(
+        this.screenVideo,
+        this.cameraVideo,
+        this.cameraVideo2,
+        this.AudioRef
+      );
+      this.Firstclick = false;
     }
   }
   public showAlert() {
@@ -141,16 +155,94 @@ export class WebrtcUiComponent implements AfterViewInit {
 
   startScreenShare = async () => {
     try {
-      this.screenShareState = ScreenShareState.Starting;
+      this.current_screenShareState = MediaState.Starting;
       const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
       this.manualWebrtcService.setScreenRecordingStream(stream);
       this.updateVideo(stream);
       this.isScreenShareStarted.set(true);
-      this.screenShareState = ScreenShareState.InProgress;
+      this.current_screenShareState = MediaState.InProgress;
     } catch (err) {
-      this.screenShareState = ScreenShareState.Idle;
+      this.current_screenShareState = MediaState.Idle;
     }
   };
+
+  startAudio = async () => {
+    try {
+      const stream = this.manualWebrtcService.getAudioStreamValue();
+      console.log(stream.getAudioTracks());
+      // 1️⃣ Mic never started yet (empty MediaStream)
+      if (stream.getAudioTracks().length === 0) {
+        console.log(stream.getAudioTracks());
+        const audioStream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: false,
+        });
+
+        this.manualWebrtcService.setAudioStream(audioStream);
+        this.currentAudiostate = MediaState.InProgress;
+        return;
+      }
+      console.log('going to mute');
+      // 2️⃣ Mic already exists → toggle mute
+      const muted = this.toggleMute(stream);
+      this.currentAudiostate = muted ? MediaState.Idle : MediaState.InProgress;
+    } catch (e) {
+      console.error('Mic error', e);
+      this.currentAudiostate = MediaState.Idle;
+    }
+  };
+  get isREciverTrackAviable() {
+    return this.ReciverAudioStream?.getAudioTracks().length;
+  }
+  RecieverToggleMute() {
+    if (this.ReciverAudioStream && this.ReciverAudioStream?.getAudioTracks().length > 0) {
+      const status = this.toggleMute(this.ReciverAudioStream);
+      if (status) {
+        this.current_ReciverAudiostate = this.AudioState.Idle;
+      } else {
+        this.current_ReciverAudiostate = this.AudioState.InProgress;
+      }
+    }
+  }
+  toggleMute(stream: MediaStream | null): boolean {
+    if (!stream) return false;
+    console.log(stream);
+
+    const track = stream.getAudioTracks()[0];
+    if (!track) return false;
+
+    track.enabled = !track.enabled;
+    console.log('Mute state', !track.enabled);
+    return !track.enabled; // returns muted state
+  }
+  createSpeakingDetector(stream: MediaStream, onSpeaking: (speaking: boolean) => void) {
+    const audioCtx = new AudioContext();
+    const source = audioCtx.createMediaStreamSource(stream);
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    const data = new Uint8Array(analyser.frequencyBinCount);
+    source.connect(analyser);
+    let speaking = false;
+    const THRESHOLD = 25; // tune this
+    const tick = () => {
+      analyser.getByteFrequencyData(data);
+
+      const avg = data.reduce((a, b) => a + b, 0) / data.length;
+
+      const isSpeaking = avg > THRESHOLD;
+
+      if (isSpeaking !== speaking) {
+        speaking = isSpeaking;
+        onSpeaking(speaking);
+      }
+
+      requestAnimationFrame(tick);
+    };
+
+    tick();
+
+    return () => audioCtx.close(); // cleanup
+  }
 
   async takeScreenshot() {
     const stream = await navigator.mediaDevices.getDisplayMedia({
@@ -211,33 +303,97 @@ export class WebrtcUiComponent implements AfterViewInit {
   stopScreenShare() {
     this.manualWebrtcService.StopScreenRecordingStream();
     this.updateVideo(null, 'screen', false);
-    this.screenShareState = ScreenShareState.Stopped;
+    this.current_screenShareState = MediaState.Stopped;
   }
   openchat() {
     this.chathidden = !this.chathidden;
   }
-  public updateVideo(stream: MediaStream | null, type = 'screen', isReceivingScreen = false) {
+  public updateVideo(
+    stream: MediaStream | null,
+    type: string = 'screen',
+    isReceivingScreen = false
+  ) {
+    console.log('Updating UI with', stream, type, isReceivingScreen);
+
     this.isReceivingScreen.set(isReceivingScreen);
-    let videoRef = null;
-    if (type === 'camera') {
-      videoRef = this.cameraVideo?.nativeElement;
-    } else {
-      videoRef = this.screenVideo?.nativeElement;
+
+    let mediaEl: HTMLVideoElement | HTMLAudioElement | undefined = undefined;
+
+    // 1️⃣ Pick correct element
+    switch (type) {
+      case 'camera':
+        mediaEl = isReceivingScreen
+          ? this.cameraVideo2?.nativeElement
+          : this.cameraVideo?.nativeElement;
+        break;
+
+      case 'screen':
+        mediaEl = this.screenVideo?.nativeElement;
+        break;
+
+      case 'audio':
+        mediaEl = this.AudioRef?.nativeElement;
+        break;
+
+      default:
+        return;
     }
-    const video = videoRef;
-    if (!video) return;
-    if (stream) {
-      const track = stream.getVideoTracks()[0];
-      track.onended = () => this.stopScreenShare();
-      video.srcObject = stream;
-      video.autoplay = true;
-      video.muted = true;
-      video.playsInline = true;
-      video.play().catch(() => {});
-    } else {
-      video.pause();
-      video.srcObject = null;
+
+    if (!mediaEl) return;
+
+    // 2️⃣ Clear stream
+    if (!stream) {
+      mediaEl.pause();
+      mediaEl.srcObject = null;
+      return;
     }
+
+    // 3️⃣ Attach stream
+    mediaEl.srcObject = stream;
+
+    if (mediaEl instanceof HTMLVideoElement) {
+      mediaEl.playsInline = true;
+    }
+    if (mediaEl instanceof HTMLAudioElement && isReceivingScreen) {
+      this.ReciverAudioStream = stream;
+      this.startSpeakingIndicator(stream);
+      mediaEl.autoplay = true;
+      this.current_screenShareState = MediaState.InProgress;
+    }
+    // 4️⃣ Handle by media type
+    if (type === 'audio') {
+      // 🔊 AUDIO
+      mediaEl.muted = false;
+    } else {
+      // 🎥 VIDEO / SCREEN
+      mediaEl.muted = true;
+
+      // only screen share needs onended
+      if (type === 'screen') {
+        const screenTrack = stream.getVideoTracks()[0];
+        if (screenTrack) {
+          screenTrack.onended = () => this.stopScreenShare();
+        }
+      }
+    }
+
+    // 5️⃣ Safe play
+    const playPromise = mediaEl.play();
+    if (playPromise) {
+      playPromise.catch(() => {
+        // autoplay policy / race condition – safe ignore
+      });
+    }
+  }
+  isSpeaking = signal(false);
+  private stopDetector?: () => void;
+  startSpeakingIndicator(stream: MediaStream) {
+    this.stopDetector = this.createSpeakingDetector(stream, (speaking) => {
+      this.isSpeaking.set(speaking);
+    });
+  }
+  stopSpeakingIndicator() {
+    this.stopDetector?.();
   }
   openDialog(): void {
     const dialogRef = this.dialog.open(DialogOverviewExampleDialog, {

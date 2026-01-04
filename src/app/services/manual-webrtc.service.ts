@@ -16,6 +16,12 @@ export class ManualWebrtcService {
   readonly ScreenRecordingstream$ = this.ScreenRecordingStream.asObservable();
   private readonly CameraStream = new BehaviorSubject<MediaStream>(new MediaStream());
   readonly CameraStream$ = this.CameraStream.asObservable();
+  private readonly ReciverCameraStream = new BehaviorSubject<MediaStream>(new MediaStream());
+  readonly ReciverCameraStream$ = this.ReciverCameraStream.asObservable();
+  private readonly AudioStream = new BehaviorSubject<MediaStream>(new MediaStream());
+  readonly AudioStream$ = this.AudioStream.asObservable();
+  private readonly ReciverAudioStream = new BehaviorSubject<MediaStream>(new MediaStream());
+  readonly ReciverAudioStream$ = this.ReciverAudioStream.asObservable();
   private socket: WebSocket | null = null;
   private messageSubject = new Subject<any>();
   public messages$: Observable<any> = this.messageSubject.asObservable();
@@ -48,7 +54,9 @@ export class ManualWebrtcService {
   get getScreenRecordingStream(): Observable<MediaStream | null> {
     return this.ScreenRecordingstream$;
   }
-
+  get getAudioStream(): Observable<MediaStream | null> {
+    return this.AudioStream$;
+  }
   setScreenRecordingStream(stream: MediaStream) {
     this.ScreenRecordingStream.next(stream);
   }
@@ -58,6 +66,12 @@ export class ManualWebrtcService {
   }
   getCameraStreamValue(): MediaStream {
     return this.CameraStream.getValue();
+  }
+  getAudioStreamValue(): MediaStream {
+    return this.AudioStream.getValue();
+  }
+  setAudioStream(stream: MediaStream) {
+    this.AudioStream.next(stream);
   }
   StopScreenRecordingStream() {
     const stream = this.ScreenRecordingStream.getValue();
@@ -69,20 +83,26 @@ export class ManualWebrtcService {
     }
   }
   public primeVideosOnce(
+    screenVideo: ElementRef<HTMLVideoElement>,
     cameraVideo: ElementRef<HTMLVideoElement>,
-    screenVideo: ElementRef<HTMLVideoElement>
+    cameraVideo2: ElementRef<HTMLVideoElement>,
+    AudioStreamRef: ElementRef<HTMLAudioElement>
   ) {
+    this.prime(cameraVideo2?.nativeElement, this.ReciverCameraStream.value);
     this.prime(cameraVideo?.nativeElement, this.CameraStream.value);
     this.prime(screenVideo?.nativeElement, this.ScreenRecordingStream.value);
+    this.prime(AudioStreamRef?.nativeElement, this.AudioStream.value);
   }
 
-  private prime(video: HTMLVideoElement | null, stream: MediaStream) {
+  private prime(video: HTMLVideoElement | HTMLAudioElement, stream: MediaStream) {
     if (!video) return;
 
     video.srcObject = stream;
     video.muted = true;
     video.autoplay = true;
-    video.playsInline = true;
+    if (video instanceof HTMLVideoElement) {
+      video.playsInline = true;
+    }
 
     video.play().catch(() => {});
   }

@@ -222,12 +222,39 @@
         }
         .video-camera-container {
           width: 100%;
-          .camera-record-video {
-            display: flex;
+          border: 0.1px solid #434343;
+          border-radius: -7px;
+          background: rgba(57, 57, 57, 0.4);
+          position: relative;
+          .video-holder {
+            position: relative;
+            color: black;
+            background: #000000;
             aspect-ratio: 2;
-            border: 0.1px solid #434343;
-            border-radius: -7px;
-            background: rgba(57, 57, 57, 0.4);
+            border: 4px solid transparent;
+            transition: border-color 120ms ease;
+
+            .font {
+              font-size: 12px;
+              position: absolute;
+              background: #00000096;
+              z-index: 34;
+              color: #ffffff;
+              padding: 1px 8px;
+            }
+            .camera-record-video {
+            }
+            .audio-control {
+              color: white;
+              position: absolute;
+              bottom: 0;
+              right: 0px;
+              background: rgba(0, 0, 0, 0.4117647059);
+              padding: 7px 4px;
+            }
+          }
+          .speaking {
+            border-color: #3b7559;
           }
         }
 

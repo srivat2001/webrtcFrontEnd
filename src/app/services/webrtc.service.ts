@@ -36,7 +36,6 @@ export class WebRTCService {
   messageInput = signal('');
   private wsSub: Subscription | null = null;
   private role = 'offer';
-
   private isNegotiating = false;
   private answerApplied = false;
   constructor(private ManualWebrtcService: ManualWebrtcService) {
@@ -47,15 +46,24 @@ export class WebRTCService {
       }
       this.isScreenShareStarted.set(true);
       if (this.pc && this.pc!.connectionState === 'connected') {
-        console.log('send to ');
-        const msg = JSON.stringify({ type: 'video-send-indent', _contentType: 'screen' });
+        console.log('send to screen');
+        const msg = JSON.stringify({ type: 'media-send-indent', _contentType: 'screen' });
         this.channel?.send(msg);
       }
     });
     this.ManualWebrtcService.getCameraStream.subscribe((stream) => {
       if (!stream) return;
       if (this.pc && this.pc!.connectionState === 'connected') {
-        const msg = JSON.stringify({ type: 'video-send-indent', _contentType: 'camera' });
+        console.log('Message sent intent camera');
+        const msg = JSON.stringify({ type: 'media-send-indent', _contentType: 'camera' });
+        this.channel?.send(msg);
+      }
+    });
+    this.ManualWebrtcService.getAudioStream.subscribe((stream) => {
+      if (!stream) return;
+      if (this.pc && this.pc!.connectionState === 'connected') {
+        console.log('Message sent intent audio');
+        const msg = JSON.stringify({ type: 'media-send-indent', _contentType: 'audio' });
         this.channel?.send(msg);
       }
     });
@@ -408,7 +416,7 @@ export class WebRTCService {
         this.isNegotiating = false;
         return;
       }
-      if (msg.type === 'ack-video-send-indent') {
+      if (msg.type === 'ack-media-send-indent') {
         if (msg._contentType === 'camera' && this.ManualWebrtcService.getCameraStreamValue()) {
           console.log('added track camera');
           this.pc!.addTrack(
@@ -421,13 +429,17 @@ export class WebRTCService {
         ) {
           console.log('added track screen');
           this.pc!.addTrack(
-            this.ManualWebrtcService.getScreenrecordingStreamValue()!.getVideoTracks()[0]
+            this.ManualWebrtcService.getScreenrecordingStreamValue().getVideoTracks()[0]
           );
+        } else if (msg._contentType === 'audio' && this.ManualWebrtcService.getAudioStreamValue()) {
+          console.log('Sent Audio Track');
+          this.pc!.addTrack(this.ManualWebrtcService.getAudioStreamValue().getAudioTracks()[0]);
         }
       }
-      if (msg.type === 'video-send-indent') {
+      if (msg.type === 'media-send-indent') {
+        console.log('Message sent intent camera ack, ', msg);
         this.channel!.send(
-          JSON.stringify({ type: 'ack-video-send-indent', _contentType: msg._contentType })
+          JSON.stringify({ type: 'ack-media-send-indent', _contentType: msg._contentType })
         );
         this.toReciveStreamType = msg._contentType;
       }
