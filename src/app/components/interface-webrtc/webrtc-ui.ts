@@ -51,12 +51,12 @@ export class WebrtcUiComponent implements AfterViewInit {
     user_id_created: 'Connection created! Share your Room ID',
   };
   isReceivingScreen = signal(false);
+  public StreamState: typeof MediaState = MediaState;
   public current_screenShareState: MediaState = MediaState.Idle;
-  public screenShareState: typeof MediaState = MediaState;
   public currentAudiostate: MediaState = MediaState.Idle;
-  public AudioState: typeof MediaState = MediaState;
   public current_ReciverAudiostate: MediaState = MediaState.Idle;
-  public ReciverAudioState: typeof MediaState = MediaState;
+  public current_cameraState: MediaState = MediaState.Idle;
+
   animal!: string;
   name!: string;
   isVideostarted = false;
@@ -66,6 +66,8 @@ export class WebrtcUiComponent implements AfterViewInit {
   chunks: Blob[] = [];
   mediaRecorder!: MediaRecorder;
   ErrorMessage = signal('');
+  isMobile = window.innerWidth <= 743;
+
   constructor(
     public dialog: MatDialog,
     private readonly manualWebrtcService: ManualWebrtcService,
@@ -75,6 +77,11 @@ export class WebrtcUiComponent implements AfterViewInit {
     return [];
   }
   ngOnInit() {
+    const resize = () => {
+      this.isMobile = window.innerWidth <= 743;
+    };
+
+    window.addEventListener('resize', resize);
     if (this.type === 'offer') {
       this.status_text['nothing'] = 'Create a connection';
     } else {
@@ -142,19 +149,6 @@ export class WebrtcUiComponent implements AfterViewInit {
   get videoStream() {
     return this._videoStream;
   }
-  async startCamera() {
-    this.cameraStream = await navigator.mediaDevices.getUserMedia({
-      video: true,
-      audio: false,
-    });
-    this.manualWebrtcService.setCameraStream(this.cameraStream);
-    const camVideo = this.cameraVideo?.nativeElement;
-    if (!camVideo) return;
-    camVideo.srcObject = this.cameraStream;
-    camVideo.muted = true;
-    camVideo.playsInline = true;
-    await camVideo.play();
-  }
 
   startScreenShare = async () => {
     try {
@@ -168,7 +162,31 @@ export class WebrtcUiComponent implements AfterViewInit {
       this.current_screenShareState = MediaState.Idle;
     }
   };
-
+  async startCamera() {
+    try {
+      const stream = this.manualWebrtcService.getCameraStreamValue();
+      if (stream.getVideoTracks().length === 0) {
+        this.cameraStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: false,
+        });
+        this.manualWebrtcService.setCameraStream(this.cameraStream);
+        const camVideo = this.cameraVideo?.nativeElement;
+        if (!camVideo) return;
+        camVideo.srcObject = this.cameraStream;
+        camVideo.muted = true;
+        camVideo.playsInline = true;
+        await camVideo.play();
+        this.current_cameraState = MediaState.InProgress;
+        return;
+      }
+      const muted = this.toggleMute(stream, 'camera');
+      this.current_cameraState = muted ? MediaState.Idle : MediaState.InProgress;
+    } catch (e) {
+      console.error('Mic error', e);
+      this.current_cameraState = MediaState.Idle;
+    }
+  }
   startAudio = async () => {
     try {
       const stream = this.manualWebrtcService.getAudioStreamValue();
@@ -187,7 +205,7 @@ export class WebrtcUiComponent implements AfterViewInit {
       }
       console.log('going to mute');
       // 2️⃣ Mic already exists → toggle mute
-      const muted = this.toggleMute(stream);
+      const muted = this.toggleMute(stream, 'audio');
       this.currentAudiostate = muted ? MediaState.Idle : MediaState.InProgress;
     } catch (e) {
       console.error('Mic error', e);
@@ -199,24 +217,22 @@ export class WebrtcUiComponent implements AfterViewInit {
   }
   RecieverToggleMute() {
     if (this.ReciverAudioStream && this.ReciverAudioStream?.getAudioTracks().length > 0) {
-      const status = this.toggleMute(this.ReciverAudioStream);
+      const status = this.toggleMute(this.ReciverAudioStream, 'audio');
       if (status) {
-        this.current_ReciverAudiostate = this.AudioState.Idle;
+        this.current_ReciverAudiostate = this.StreamState.Idle;
       } else {
-        this.current_ReciverAudiostate = this.AudioState.InProgress;
+        this.current_ReciverAudiostate = this.StreamState.InProgress;
       }
     }
   }
-  toggleMute(stream: MediaStream | null): boolean {
+  toggleMute(stream: MediaStream, type = 'audio'): boolean {
     if (!stream) return false;
-    console.log(stream);
-
-    const track = stream.getAudioTracks()[0];
-    if (!track) return false;
-
+    const tracks = type === 'audio' ? stream.getAudioTracks() : stream.getVideoTracks();
+    if (tracks.length === 0) return false;
+    const track = tracks[0];
     track.enabled = !track.enabled;
-    console.log('Mute state', !track.enabled);
-    return !track.enabled; // returns muted state
+    console.log(`${type} muted =`, !track.enabled);
+    return !track.enabled; // true = muted
   }
   createSpeakingDetector(stream: MediaStream, onSpeaking: (speaking: boolean) => void) {
     const audioCtx = new AudioContext();
@@ -284,7 +300,9 @@ export class WebrtcUiComponent implements AfterViewInit {
       }
     }, 3000);
   }
-  createOffer() {
+  createOffer(events: PointerEvent) {
+    (events.target as HTMLElement).setPointerCapture(events.pointerId);
+
     if (this.type === 'offer') {
       this.webrtcService.createOffer();
     } else {

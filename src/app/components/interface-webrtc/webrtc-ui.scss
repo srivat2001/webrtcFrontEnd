@@ -194,7 +194,6 @@
     margin: 0px 0 0 11px;
     height: 73vh;
     background: black;
-    overflow: hidden;
     @media (max-width: 743px) {
       width: fit-content;
       margin: auto;
@@ -334,13 +333,14 @@
     border-radius: 999px;
     @media (max-width: 743px) {
       display: block;
+      padding: 0px;
     }
     /* ---------- CONNECTION / USER ---------- */
     .for-animation {
-      border-radius: 43px;
-      background: linear-gradient(#fff, #fff) padding-box,
-        linear-gradient(90deg, #005cbb 0%, #005cbb 40%, white 50%, #005cbb 60%, #005cbb 100%)
-          border-box;
+      // border-radius: 43px;
+      // background: linear-gradient(#fff, #fff) padding-box,
+      //   linear-gradient(90deg, #005cbb 0%, #005cbb 40%, white 50%, #005cbb 60%, #005cbb 100%)
+      //     border-box;
 
       background-size: 300% 100%;
       animation: borderMove 1.2s linear infinite;
@@ -361,12 +361,14 @@
         background: white;
         padding: 0.5rem 1rem;
         width: 304px;
+
         @media (max-width: 743px) {
           margin: auto;
+          border: 1px solid #dadada;
         }
         &.skeleton {
           position: relative;
-          height: fit-content;
+          height: 30px;
           background: linear-gradient(to right, #eeeeee 8%, #bbbbbb 18%, #fbfbfb 33%);
           background-size: 800px 104px;
           animation: placeHolderShimmer 2s linear infinite;
@@ -392,6 +394,17 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            &.shiftleft {
+              right: 28px;
+            }
+            @media (max-width: 743px) {
+              position: absolute;
+              right: 5px;
+              top: 0;
+              margin: auto;
+              bottom: 0px;
+              width: 28px;
+            }
             .lds-ring {
               display: flex;
               position: relative;
@@ -540,6 +553,7 @@
           margin: auto;
           font-size: 25px;
           color: inherit;
+          touch-action: manipulation;
         }
 
         &.cancel-btn {

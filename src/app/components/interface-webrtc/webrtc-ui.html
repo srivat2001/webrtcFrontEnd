@@ -33,7 +33,7 @@
                 @if(isScreenShareStarted()){
                 <div>Overlay has been added to avoid screeen mirroring</div>
 
-                }@else { @if(current_screenShareState === screenShareState.Starting){
+                }@else { @if(current_screenShareState === StreamState.Starting){
                 <app-spinner></app-spinner>
                 <h3 class="info-text">Starting screen share ...</h3>
                 }@else {
@@ -64,12 +64,8 @@
               }
             </div>
             <div class="video-camera-container">
-              <div class="video-holder">
-                <div class="font">Sender Feed</div>
-                <video class="camera-record-video" autoplay #cameraVideo playsinline muted></video>
-                >
-              </div>
-              <div class="video-holder Receiver" [class.speaking]="isSpeaking()">
+              @if(isMobile){
+              <div class="video-holder" [class.speaking]="isSpeaking()">
                 <div class="font">Receiver Feed</div>
                 <video class="camera-record-video" autoplay #cameraVideo2 playsinline muted></video>
                 @if(isREciverTrackAviable){
@@ -84,12 +80,46 @@
                     }"
                     (click)="RecieverToggleMute()"
                     (touchstart)="RecieverToggleMute()"
-                    [fontIcon]="current_ReciverAudiostate == AudioState.Idle ? 'mic_off' : 'mic'"
+                    [fontIcon]="current_ReciverAudiostate == StreamState.Idle ? 'mic_off' : 'mic'"
                     aria-label="Copy ICE candidate"
                   ></mat-icon>
                 </div>
                 }
               </div>
+              <div class="video-holder Receiver">
+                <div class="font">Sender Feed</div>
+                <video class="camera-record-video" autoplay #cameraVideo playsinline muted></video>
+                >
+              </div>
+
+              }@else{
+              <div class="video-holder Receiver">
+                <div class="font">Sender Feed</div>
+                <video class="camera-record-video" autoplay #cameraVideo playsinline muted></video>
+                >
+              </div>
+              <div class="video-holder" [class.speaking]="isSpeaking()">
+                <div class="font">Receiver Feed</div>
+                <video class="camera-record-video" autoplay #cameraVideo2 playsinline muted></video>
+                @if(isREciverTrackAviable){
+                <div class="audio-control">
+                  <mat-icon
+                    [ngClass]="{
+                      'copy-icon': true,
+                      'material-symbols-outlined': true,
+                      'btn-copy': true,
+
+                      disabled: !sendBtn
+                    }"
+                    (click)="RecieverToggleMute()"
+                    (touchstart)="RecieverToggleMute()"
+                    [fontIcon]="current_ReciverAudiostate == StreamState.Idle ? 'mic_off' : 'mic'"
+                    aria-label="Copy ICE candidate"
+                  ></mat-icon>
+                </div>
+                }
+              </div>
+              }
 
               <div class="audio-control">
                 <audio class="camera-record-video" autoplay #audio></audio>
@@ -140,32 +170,33 @@
                 />
                 } }
               </div>
-              <div class="flex-display-center">
+              <div class="flex-display-center" [class.shiftleft]="status() === 'nothing'">
                 @if(status() ==="nothing" || status() === "offer_initiated" ||
                 status()==='connecting_to_existing'){
-                <div class="icon-holder">
-                  <div>
-                    <div class="icon-holder">
-                      <mat-icon
-                        class="copy-icon material-symbols-outlined btn-copy"
-                        [ngClass]="{
-                          rotate:
-                            status() === 'offer_initiated' || status() === 'connecting_to_existing'
-                        }"
-                        (touchstart)="createOffer()"
-                        (click)="createOffer()"
-                        [fontIcon]="
-                          status() == 'offer_initiated' || status() == 'connecting_to_existing'
-                            ? 'refresh'
-                            : 'arrow_forward'
-                        "
-                        class="close"
-                        aria-label="close"
-                      ></mat-icon>
+                <div>
+                  <div class="icon-holder">
+                    <div (pointerdown)="createOffer($event)">
+                      <div class="icon-holder">
+                        <mat-icon
+                          class="copy-icon material-symbols-outlined btn-copy"
+                          [ngClass]="{
+                            rotate:
+                              status() === 'offer_initiated' ||
+                              status() === 'connecting_to_existing'
+                          }"
+                          [fontIcon]="
+                            status() == 'offer_initiated' || status() == 'connecting_to_existing'
+                              ? 'refresh'
+                              : 'arrow_forward'
+                          "
+                          class="close"
+                          aria-label="close"
+                        ></mat-icon>
+                      </div>
                     </div>
                   </div>
                 </div>
-                } @if( status() === "offer_initiated" || status() === "user_id_created" ||status()
+                } @if( status() === "nothing" || status() === "user_id_created" ||status()
                 ==="connected" ){ @if( status() === "user_id_created" ){
                 <mat-icon
                   class="copy-icon material-symbols-outlined btn-copy"
@@ -198,7 +229,7 @@
           <div
             class="icon-holder mobile"
             [ngClass]="{
-           'inprogress': current_screenShareState !== screenShareState.Idle,
+           'inprogress': current_screenShareState !== StreamState.Idle,
         }"
           >
             <mat-icon
@@ -251,41 +282,49 @@
             ></mat-icon>
           </div>
           } @if(isVideostarted){
-          <div class="icon-holder cancel-btn">
-            <mat-icon
-              [ngClass]="{
-                'copy-icon': true,
-                'material-symbols-outlined': true,
-                'btn-copy': true,
-                disabled: !sendBtn
-              }"
-              [fontIcon]="'stop_circle'"
-              (click)="stoprecording()"
-              (touchstart)="stoprecording()"
-              aria-label="Cancel screen share"
-            ></mat-icon>
+          <div>
+            <div class="icon-holder cancel-btn">
+              <mat-icon
+                [ngClass]="{
+                  'copy-icon': true,
+                  'material-symbols-outlined': true,
+                  'btn-copy': true,
+                  disabled: !sendBtn
+                }"
+                [fontIcon]="'stop_circle'"
+                aria-label="Cancel screen share"
+              ></mat-icon>
+            </div>
           </div>
           } @else {
-          <div matTooltip="Start recording the screen" class="icon-holder cancel-btn">
-            <mat-icon
-              [ngClass]="{
-                'copy-icon': true,
-                'material-symbols-outlined': true,
-                'btn-copy': true,
-                disabled: !sendBtn
-              }"
-              [fontIcon]="'album'"
+          <div (click)="stoprecording()" (touchstart)="stoprecording()">
+            <div
+              matTooltip="Start recording the screen"
               (click)="startCamera()"
               (touchstart)="startCamera()"
-              aria-label="Cancel screen share"
-            ></mat-icon>
+              class="icon-holder cancel-btn"
+            >
+              <mat-icon
+                [ngClass]="{
+                  'copy-icon': true,
+                  'material-symbols-outlined': true,
+                  'btn-copy': true,
+                  disabled: !sendBtn
+                }"
+                [fontIcon]="
+                  current_cameraState === StreamState.Idle
+                    ? 'video_camera_front_off'
+                    : 'video_camera_front'
+                "
+                aria-label="Cancel screen share"
+              ></mat-icon>
+            </div>
           </div>
-
           }
           <div
             [matTooltip]="currentAudiostate + 'ff'"
             [ngClass]="{
-           'inprogress': current_screenShareState !== screenShareState.Idle,
+           'inprogress': current_screenShareState !== StreamState.Idle,
         }"
             class="icon-holder cancel-btn"
             (touchstart)="startAudio()"
@@ -298,7 +337,7 @@
                 'btn-copy': true,
                 disabled: !sendBtn
               }"
-              [fontIcon]="currentAudiostate === AudioState.Idle ? 'mic_off' : 'mic'"
+              [fontIcon]="currentAudiostate === StreamState.Idle ? 'mic_off' : 'mic'"
             ></mat-icon>
           </div>
         </div>

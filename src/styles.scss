@@ -25,7 +25,7 @@ html {
   );
   @include mat.stepper-overrides(
     (
-      container-color: transparent // filled-container-color: red,,,,,,,
+      container-color: transparent // filled-container-color: red,,,,,,,,
     )
   );
 }
@@ -34,7 +34,6 @@ body {
   // Default the application to a light color theme. This can be changed to
   // `dark` to enable the dark color theme, or to `light dark` to defer to the
   // user's system settings.
-  overflow-y: hidden;
   // Set a default background, font and text colors for the application using
   // Angular Material's system-level CSS variables. Learn more about these
   // variables at https://material.angular.dev/guide/system-variables

@@ -10,7 +10,7 @@
     "buildProd": "ng build --configuration production",
     "watch": "ng build --watch --configuration development",
     "serveProd": "ng serve --configuration production --ssl --ssl-cert localhost.pem --ssl-key localhost-key.pem",
-    "serve:lan:https": "ng serve --configuration production --host 0.0.0.0 --ssl --ssl-cert 192.168.1.16.pem --ssl-key 192.168.1.16-key.pem",
+    "serve:lan:https": "ng serve --configuration development --host 0.0.0.0 --ssl --ssl-cert 192.168.1.16.pem --ssl-key 192.168.1.16-key.pem",
     "test": "ng test"
   },
   "prettier": {
