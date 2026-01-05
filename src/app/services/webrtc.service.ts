@@ -343,20 +343,20 @@ export class WebRTCService {
   }
 
   sendStreamifExists = async () => {
-    if (this.ManualWebrtcService.getCameraStreamValue()) {
-      await new Promise<string>((resolve) => {
-        this.resolveFn = resolve;
-        this.ManualWebrtcService.setCameraStream(this.ManualWebrtcService.getCameraStreamValue());
-      });
-    }
-    setTimeout(() => {
-      if (this.ManualWebrtcService.getScreenrecordingStreamValue()) {
-        console.log('Sending screen recording stream');
-        this.ManualWebrtcService.setScreenRecordingStream(
-          this.ManualWebrtcService.getScreenrecordingStreamValue()
-        );
-      }
-    }, 10);
+    // if (this.ManualWebrtcService.getCameraStreamValue()) {
+    //   await new Promise<string>((resolve) => {
+    //     this.resolveFn = resolve;
+    //     this.ManualWebrtcService.setCameraStream(this.ManualWebrtcService.getCameraStreamValue());
+    //   });
+    // }
+    // setTimeout(() => {
+    //   if (this.ManualWebrtcService.getScreenrecordingStreamValue()) {
+    //     console.log('Sending screen recording stream');
+    //     this.ManualWebrtcService.setScreenRecordingStream(
+    //       this.ManualWebrtcService.getScreenrecordingStreamValue()
+    //     );
+    //   }
+    // }, 10);
   };
   private async safeSetRemoteDescription(desc: RTCSessionDescriptionInit) {
     if (!this.pc) return;
@@ -443,6 +443,11 @@ export class WebRTCService {
         );
         this.toReciveStreamType = msg._contentType;
       }
+      if (msg.type === 'text-message') {
+        this.ManualWebrtcService.PushToMessage(
+          msg.content as { text: string; me: boolean; time: string }
+        );
+      }
     };
 
     channel.onclose = () => {
@@ -472,6 +477,21 @@ export class WebRTCService {
     };
 
     trySend();
+  }
+
+  sendMessage(msg: string) {
+    if (this.channel) {
+      this.channel.send(
+        JSON.stringify({
+          type: 'text-message',
+          content: {
+            text: msg,
+            me: false,
+            time: 'test',
+          },
+        })
+      );
+    }
   }
   createOffer = async (): Promise<void> => {
     this.ManualWebrtcService.updateConnectionState({
@@ -576,7 +596,6 @@ export class WebRTCService {
       return alert('Please paste answer first');
     }
     await this.safeSetRemoteDescription(JSON.parse(this.getAnswerText()));
-
     this.ManualWebrtcService.addLog('✓ Answer applied');
     if (!this.getRTCConnection()) return alert('PC not ready');
     for (const item of this.getRemoteIceText()) {

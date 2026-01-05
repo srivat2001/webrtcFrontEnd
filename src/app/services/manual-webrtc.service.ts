@@ -37,6 +37,7 @@ export class ManualWebrtcService {
       ...partial,
     });
   }
+  Messages: { text: string; me: boolean; time: string }[] = [];
   //public connStateData$ = this.connStateData.asObservable();
   public timerId: any = null;
   public seconds = 10;
@@ -47,6 +48,12 @@ export class ManualWebrtcService {
     'Offer Sent to Websocket Server',
     'Await confirmation from Receiver side',
   ];
+  get MessageList() {
+    return this.Messages;
+  }
+  public PushToMessage(msg: { text: string; me: boolean; time: string }) {
+    this.Messages.push(msg);
+  }
   progressSetuper = signal([false, false, false, false]);
   logs = signal<{ type: 'normal' | 'warn' | 'error'; message: string }[]>([]);
 

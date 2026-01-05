@@ -188,14 +188,20 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+
   /* ---------- VIDEO ---------- */
   .video-loop {
     margin: 0px 0 0 11px;
     height: 73vh;
     background: black;
     overflow: hidden;
-
+    @media (max-width: 743px) {
+      width: fit-content;
+      margin: auto;
+      margin-top: 0px;
+      margin-bottom: 0px;
+      height: auto;
+    }
     .video-overlay-container {
       position: relative;
       width: 100%;
@@ -204,9 +210,21 @@
 
       .video-flex {
         display: flex;
+        @media (max-width: 1100px) {
+          display: block;
+        }
 
         .screen-record-overlay-holder {
           position: relative;
+          width: 80%;
+          @media (max-width: 1100px) {
+            position: relative;
+            width: 100%;
+            height: 319px;
+          }
+          @media (max-width: 743px) {
+            display: none;
+          }
         }
         .screen-record-video {
           border: 1px solid white;
@@ -214,18 +232,25 @@
           margin: auto;
           justify-content: center;
           display: flex;
-          width: 802px;
           border-radius: 20px;
           .overlayvideo {
             position: relative;
           }
         }
         .video-camera-container {
-          width: 100%;
+          width: 410px;
           border: 0.1px solid #434343;
           border-radius: -7px;
           background: rgba(57, 57, 57, 0.4);
           position: relative;
+          @media (max-width: 1100px) {
+            display: flex;
+            width: 100%;
+          }
+          @media (max-width: 743px) {
+            display: block;
+            width: 100%;
+          }
           .video-holder {
             position: relative;
             color: black;
@@ -233,7 +258,9 @@
             aspect-ratio: 2;
             border: 4px solid transparent;
             transition: border-color 120ms ease;
-
+            @media (max-width: 743px) {
+              height: 198px;
+            }
             .font {
               font-size: 12px;
               position: absolute;
@@ -292,9 +319,10 @@
     padding: 13px;
     display: flex;
     gap: 11px;
-
     border-radius: 999px;
-
+    @media (max-width: 743px) {
+      display: block;
+    }
     /* ---------- CONNECTION / USER ---------- */
     .for-animation {
       border-radius: 43px;
@@ -321,6 +349,9 @@
         background: white;
         padding: 0.5rem 1rem;
         width: 304px;
+        @media (max-width: 743px) {
+          margin: auto;
+        }
         &.skeleton {
           position: relative;
           height: fit-content;
@@ -464,13 +495,28 @@
       display: flex;
       gap: 14px;
       color: white;
-
+      @media (max-width: 1100px) {
+        left: 100%;
+      }
+      @media (max-width: 743px) {
+        position: relative;
+        margin: auto;
+        left: auto;
+        width: fit-content;
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
       .icon-holder {
         width: 50px;
         height: 50px;
         border-radius: 999px;
         background: #005cbb;
         display: inline-flex;
+        &.mobile {
+          @media (max-width: 743px) {
+            display: none;
+          }
+        }
         &.inprogress {
           background: #949494;
         }
@@ -618,7 +664,9 @@
   right: -365px;
   transition: right 0.2s ease;
   z-index: 100;
-  /* top: 54px; */
+  @media (max-width: 743px) {
+    display: none;
+  }
   border-radius: 27px;
   .chat-header {
     display: flex;

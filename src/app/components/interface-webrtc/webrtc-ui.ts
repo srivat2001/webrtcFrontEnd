@@ -93,8 +93,11 @@ export class WebrtcUiComponent implements AfterViewInit {
       this.status.set(state.status);
       this.sendBtn.set(state.sendBtn);
 
-      // show dialog, toast, etc. here
+      // show dialog, toast, etc. here]qwsad
     });
+  }
+  get getMessages() {
+    return this.manualWebrtcService.MessageList;
   }
   ngAfterViewInit() {}
   Firstclick = true;
@@ -386,6 +389,10 @@ export class WebrtcUiComponent implements AfterViewInit {
     }
   }
   isSpeaking = signal(false);
+  sendMessage() {
+    this.webrtcService.sendMessage(this.Textmessage);
+    this.Textmessage = '';
+  }
   private stopDetector?: () => void;
   startSpeakingIndicator(stream: MediaStream) {
     this.stopDetector = this.createSpeakingDetector(stream, (speaking) => {
@@ -395,6 +402,7 @@ export class WebrtcUiComponent implements AfterViewInit {
   stopSpeakingIndicator() {
     this.stopDetector?.();
   }
+  Textmessage = '';
   openDialog(): void {
     const dialogRef = this.dialog.open(DialogOverviewExampleDialog, {
       width: '250px',

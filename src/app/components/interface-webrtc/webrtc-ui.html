@@ -15,7 +15,7 @@
 
 } -->
 @if(true){
-<div class="content" (click)="startMedia()">
+<div class="content" (click)="startMedia()" (touchstart)="startMedia()">
   <div
     class="side-panel"
     [ngClass]="{
@@ -38,7 +38,12 @@
                 <h3 class="info-text">Starting screen share ...</h3>
                 }@else {
 
-                <button matButton="filled" [color]="'white'" (click)="startScreenShare()">
+                <button
+                  matButton="filled"
+                  [color]="'white'"
+                  (click)="startScreenShare()"
+                  (touchstart)="startScreenShare()"
+                >
                   <mat-icon
                     [ngClass]="{
                       'copy-icon': true,
@@ -48,6 +53,7 @@
                       disabled: !sendBtn
                     }"
                     (click)="startScreenShare()"
+                    (touchstart)="startScreenShare()"
                     [fontIcon]="sendBtn() ? 'screen_share' : 'screen_share'"
                     aria-label="Copy ICE candidate"
                   ></mat-icon>
@@ -64,7 +70,7 @@
                 >
               </div>
               <div class="video-holder" [class.speaking]="isSpeaking()">
-                <div class="font">Reciever Feed</div>
+                <div class="font">Receiver Feed</div>
                 <video class="camera-record-video" autoplay #cameraVideo2 playsinline muted></video>
                 @if(isREciverTrackAviable){
                 <div class="audio-control">
@@ -77,6 +83,7 @@
                       disabled: !sendBtn
                     }"
                     (click)="RecieverToggleMute()"
+                    (touchstart)="RecieverToggleMute()"
                     [fontIcon]="current_ReciverAudiostate == AudioState.Idle ? 'mic_off' : 'mic'"
                     aria-label="Copy ICE candidate"
                   ></mat-icon>
@@ -146,6 +153,7 @@
                             status() === 'offer_initiated' || status() === 'connecting_to_existing'
                         }"
                         (click)="createOffer()"
+                        (touchstart)="createOffer()"
                         [fontIcon]="
                           status() == 'offer_initiated' || status() == 'connecting_to_existing'
                             ? 'refresh'
@@ -172,6 +180,7 @@
                       <mat-icon
                         class="copy-icon material-symbols-outlined btn-copy"
                         (click)="resetConnection()"
+                        (touchstart)="resetConnection()"
                         [fontIcon]="'stop_circle'"
                         class="close"
                         aria-label="close"
@@ -187,7 +196,7 @@
         </div>
         <div class="icon-holder-main">
           <div
-            class="icon-holder"
+            class="icon-holder mobile"
             [ngClass]="{
            'inprogress': current_screenShareState !== screenShareState.Idle,
         }"
@@ -201,12 +210,13 @@
                 disabled: !sendBtn
               }"
               (click)="startScreenShare()"
+              (touchstart)="startScreenShare()"
               [fontIcon]="'screen_share'"
               aria-label="Copy ICE candidate"
             ></mat-icon>
           </div>
           <div
-            class="icon-holder"
+            class="icon-holder mobile"
             [ngClass]="{
            'icon-holder-notsharedscreen': !isScreenShareStarted(),
         }"
@@ -220,6 +230,7 @@
                 disabled: !sendBtn
               }"
               (click)="openchat()"
+              (touchstart)="openchat()"
               [fontIcon]="'chat'"
               aria-label="Copy ICE candidate"
             ></mat-icon>
@@ -235,6 +246,7 @@
               }"
               [fontIcon]="'cancel'"
               (click)="stopScreenShare()"
+              (touchstart)="stopScreenShare()"
               aria-label="Cancel screen share"
             ></mat-icon>
           </div>
@@ -249,6 +261,7 @@
               }"
               [fontIcon]="'stop_circle'"
               (click)="stoprecording()"
+              (touchstart)="stoprecording()"
               aria-label="Cancel screen share"
             ></mat-icon>
           </div>
@@ -263,6 +276,7 @@
               }"
               [fontIcon]="'album'"
               (click)="startCamera()"
+              (touchstart)="startCamera()"
               aria-label="Cancel screen share"
             ></mat-icon>
           </div>
@@ -275,6 +289,7 @@
         }"
             class="icon-holder cancel-btn"
             (click)="startAudio()"
+            (touchstart)="startAudio()"
           >
             <mat-icon
               [ngClass]="{
@@ -301,13 +316,13 @@
       <h2>Chat</h2>
     </div>
     <div class="messages">
-      <div *ngFor="let m of messages" class="msg" [ngClass]="{ me: m.me }">
+      <div *ngFor="let m of getMessages" class="msg" [ngClass]="{ me: m.me }">
         {{ m.text }}
         <div class="time">{{ m.time }}</div>
       </div>
     </div>
     <div class="chat-input-area">
-      <input placeholder="Type a message…" />
+      <input [(ngModel)]="Textmessage" placeholder="Type a message…" />
       <div class="chatholder">
         <mat-icon
           [ngClass]="{
@@ -316,6 +331,8 @@
             'btn-copy': true,
             disabled: !sendBtn
           }"
+          (click)="sendMessage()"
+          (touchstart)="sendMessage()"
           [fontIcon]="sendBtn() ? 'send' : 'cancel_schedule_send'"
           aria-label="Copy ICE candidate"
         ></mat-icon>
