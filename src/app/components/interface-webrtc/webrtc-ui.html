@@ -153,6 +153,7 @@
                             status() === 'offer_initiated' || status() === 'connecting_to_existing'
                         }"
                         (touchstart)="createOffer()"
+                        (click)="createOffer()"
                         [fontIcon]="
                           status() == 'offer_initiated' || status() == 'connecting_to_existing'
                             ? 'refresh'
@@ -288,6 +289,7 @@
         }"
             class="icon-holder cancel-btn"
             (touchstart)="startAudio()"
+            (click)="startAudio()"
           >
             <mat-icon
               [ngClass]="{
