@@ -69,7 +69,7 @@
                 <video class="camera-record-video" autoplay #cameraVideo playsinline muted></video>
                 >
               </div>
-              <div class="video-holder" [class.speaking]="isSpeaking()">
+              <div class="video-holder Receiver" [class.speaking]="isSpeaking()">
                 <div class="font">Receiver Feed</div>
                 <video class="camera-record-video" autoplay #cameraVideo2 playsinline muted></video>
                 @if(isREciverTrackAviable){
@@ -152,7 +152,6 @@
                           rotate:
                             status() === 'offer_initiated' || status() === 'connecting_to_existing'
                         }"
-                        (click)="createOffer()"
                         (touchstart)="createOffer()"
                         [fontIcon]="
                           status() == 'offer_initiated' || status() == 'connecting_to_existing'
@@ -288,7 +287,6 @@
            'inprogress': current_screenShareState !== screenShareState.Idle,
         }"
             class="icon-holder cancel-btn"
-            (click)="startAudio()"
             (touchstart)="startAudio()"
           >
             <mat-icon
