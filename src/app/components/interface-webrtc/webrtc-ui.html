@@ -170,7 +170,7 @@
                 />
                 } }
               </div>
-              <div class="flex-display-center" [class.shiftleft]="status() === 'nothing'">
+              <div class="flex-display-center" [class.shiftleft]="status() === 'offer_initiated'">
                 @if(status() ==="nothing" || status() === "offer_initiated" ||
                 status()==='connecting_to_existing'){
                 <div>
@@ -196,7 +196,7 @@
                     </div>
                   </div>
                 </div>
-                } @if( status() === "nothing" || status() === "user_id_created" ||status()
+                } @if( status() === "offer_initiated" || status() === "user_id_created" ||status()
                 ==="connected" ){ @if( status() === "user_id_created" ){
                 <mat-icon
                   class="copy-icon material-symbols-outlined btn-copy"
