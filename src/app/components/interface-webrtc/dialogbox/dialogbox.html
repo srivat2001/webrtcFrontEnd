@@ -1,0 +1,54 @@
+<div class="device-modal">
+  <h2>Change your audio</h2>
+
+  <!-- AUDIO INPUT -->
+  <section>
+    <h3>🎙️ Microphone</h3>
+    <div class="device-list">
+      <ng-container *ngFor="let d of devices">
+        <label
+          class="device-card"
+          *ngIf="d.kind === 'audioinput'"
+          [class.active]="selectedInputId === d.deviceId"
+        >
+          <input
+            type="radio"
+            name="audioinput"
+            [value]="d.deviceId"
+            [(ngModel)]="selectedInputId"
+            (change)="AudioDeviceSelected()"
+          />
+          <div class="info">
+            <div class="label">{{ d.label || 'Unknown microphone' }}</div>
+            <div class="meta">{{ d.deviceId }}</div>
+          </div>
+        </label>
+      </ng-container>
+    </div>
+  </section>
+
+  <!-- AUDIO OUTPUT
+  <section>
+    <h3>🔊 Speaker</h3>
+    <div class="device-list">
+      <ng-container *ngFor="let d of devices">
+        <label
+          class="device-card"
+          *ngIf="d.kind === 'audiooutput'"
+          [class.active]="selectedOutputId === d.deviceId"
+        >
+          <input
+            type="radio"
+            name="audiooutput"
+            [value]="d.deviceId"
+            [(ngModel)]="selectedOutputId"
+          />
+          <div class="info">
+            <div class="label">{{ d.label || 'Unknown speaker' }}</div>
+            <div class="meta">{{ d.deviceId }}</div>
+          </div>
+        </label>
+      </ng-container>
+    </div>
+  </section> -->
+</div>

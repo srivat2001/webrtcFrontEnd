@@ -18,57 +18,99 @@ html {
   );
   @include mat.card-overrides(
     (
-      elevated-container-color: red,
-      elevated-container-shape: 32px,
-      title-text-size: 2rem,
+      elevated-container-color: rgba(15, 23, 42, 0.95),
+      elevated-container-shape: 16px,
+      title-text-size: 1.5rem,
     )
   );
   @include mat.stepper-overrides(
     (
-      container-color: transparent // filled-container-color: red,,,,,,,,
+      container-color: rgba(15, 23, 42, 0.9),
     )
   );
 }
 
 body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
+  // Default the application to a dark color theme
   // Set a default background, font and text colors for the application using
   // Angular Material's system-level CSS variables. Learn more about these
   // variables at https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  color: #e5e7eb;
   font: var(--mat-sys-body-medium);
 
   // Reset the user agent margin.
   margin: 0;
 }
+
 /* You can add global styles to this file, and also import other style files */
 
-/* PrimeNG input focus override: remove green border/halo from theme */
-/* Adjust `border-color` and `box-shadow` as needed */
-.p-inputtext:focus,
-.p-inputtextarea:focus,
-input[pInputText]:focus,
-textarea[pInputTextarea]:focus {
-  border-color: #ced4da !important;
-  box-shadow: none !important;
-  outline: none !important;
+/* PrimeNG input focus override: modern dark theme styling */
+.p-inputtext,
+.p-inputtextarea,
+input[pInputText],
+textarea[pInputTextarea] {
+  background-color: rgba(15, 23, 42, 0.8) !important;
+  border: 1px solid #1e293b !important;
+  color: #e5e7eb !important;
+
+  &:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 12px rgba(56, 189, 248, 0.3) !important;
+    outline: none !important;
+  }
+
+  &::placeholder {
+    color: #64748b;
+  }
 }
 
-/* Optional: force background/foreground if theme sets dark colors */
-body {
-  background-color: #ffffff;
-  color: #111827 !important;
+/* Material buttons styling */
+::ng-deep .mat-mdc-button,
+::ng-deep .mat-mdc-raised-button {
+  &.mat-primary {
+    background: linear-gradient(145deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.05)) !important;
+    color: #22c55e !important;
+    border: 1px solid #22c55e;
+
+    &:hover {
+      background: rgba(34, 197, 94, 0.3) !important;
+      box-shadow: 0 0 12px rgba(34, 197, 94, 0.3) !important;
+    }
+  }
+}
+
+/* Material Icons styling */
+::ng-deep .mat-icon {
+  color: inherit;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.4);
+  border-radius: 4px;
+
+  &:hover {
+    background: rgba(56, 189, 248, 0.6);
+  }
 }
 
 html,
 body {
   height: 100%;
 }
+
 body {
   margin: 0;
   margin-top: 16px;
-  font-family: Roboto, 'Helvetica Neue', sans-serif;
+  font-family: 'Inter', Roboto, 'Helvetica Neue', sans-serif;
 }

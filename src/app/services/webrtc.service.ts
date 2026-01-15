@@ -341,22 +341,22 @@ export class WebRTCService {
       },
     });
   }
-
+  BulkSend: string[] = [];
   sendStreamifExists = async () => {
-    // if (this.ManualWebrtcService.getCameraStreamValue()) {
-    //   await new Promise<string>((resolve) => {
-    //     this.resolveFn = resolve;
-    //     this.ManualWebrtcService.setCameraStream(this.ManualWebrtcService.getCameraStreamValue());
-    //   });
-    // }
-    // setTimeout(() => {
-    //   if (this.ManualWebrtcService.getScreenrecordingStreamValue()) {
-    //     console.log('Sending screen recording stream');
-    //     this.ManualWebrtcService.setScreenRecordingStream(
-    //       this.ManualWebrtcService.getScreenrecordingStreamValue()
-    //     );
-    //   }
-    // }, 10);
+    if (this.ManualWebrtcService.getCameraStreamValue().getVideoTracks().length > 0) {
+      this.BulkSend.push('camera');
+    }
+    if (this.ManualWebrtcService.getScreenrecordingStreamValue().getVideoTracks().length > 0) {
+      this.BulkSend.push('screen');
+    }
+    if (this.ManualWebrtcService.getAudioStreamValue().getAudioTracks().length > 0) {
+      this.BulkSend.push('audio');
+    }
+    if (this.BulkSend.length > 0) {
+      this.channel?.send(
+        JSON.stringify({ type: 'media-send-indent', _contentType: this.BulkSend.pop() })
+      );
+    }
   };
   private async safeSetRemoteDescription(desc: RTCSessionDescriptionInit) {
     if (!this.pc) return;
@@ -435,6 +435,11 @@ export class WebRTCService {
           console.log('Sent Audio Track');
           this.pc!.addTrack(this.ManualWebrtcService.getAudioStreamValue().getAudioTracks()[0]);
         }
+        if (this.BulkSend.length > 0) {
+          this.channel?.send(
+            JSON.stringify({ type: 'media-send-indent', _contentType: this.BulkSend.pop() })
+          );
+        }
       }
       if (msg.type === 'media-send-indent') {
         console.log('Message sent intent camera ack, ', msg);
@@ -444,6 +449,7 @@ export class WebRTCService {
         this.toReciveStreamType = msg._contentType;
       }
       if (msg.type === 'text-message') {
+        console.log(msg);
         this.ManualWebrtcService.PushToMessage(
           msg.content as { text: string; me: boolean; time: string }
         );
@@ -491,6 +497,11 @@ export class WebRTCService {
           },
         })
       );
+      this.ManualWebrtcService.PushToMessage({
+        text: msg,
+        me: false,
+        time: 'test',
+      } as { text: string; me: boolean; time: string });
     }
   }
   createOffer = async (): Promise<void> => {

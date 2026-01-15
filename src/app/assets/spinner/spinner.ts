@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
 
 @Component({
   selector: 'app-spinner',
@@ -7,5 +7,6 @@ import { Component } from '@angular/core';
   styleUrl: './spinner.scss',
 })
 export class Spinner {
-
+  @Input() size: string = '64px';
+  @Input() border: string = '3px';
 }

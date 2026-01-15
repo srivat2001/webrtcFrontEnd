@@ -21,6 +21,9 @@ import { ManualWebrtcService } from '../../services/manual-webrtc.service';
 import { Spinner } from '../../assets/spinner/spinner';
 import { WebRTCService } from '../../services/webrtc.service';
 import { MediaState } from '../../models/media-state.model';
+import { Dialogbox } from './dialogbox/dialogbox';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { single } from 'rxjs';
 @Component({
   selector: 'app-webrtc-ui',
   standalone: true,
@@ -30,7 +33,28 @@ import { MediaState } from '../../models/media-state.model';
 })
 export class WebrtcUiComponent implements AfterViewInit {
   @Input() type: 'offer' | 'answer' = 'offer';
-  messages: any = [];
+  messages = signal<{ text: string; me: boolean; time: string }[]>([
+    {
+      text: 'This is a longer test message from the other person. It should wrap nicely in the chat box.',
+      me: false,
+      time: '10:30 AM',
+    },
+    {
+      text: 'Hi!',
+      me: false,
+      time: '10:31 AM',
+    },
+    {
+      text: 'This is my long message response. I am testing the interface to ensure everything displays correctly with different message lengths.',
+      me: true,
+      time: '10:32 AM',
+    },
+    {
+      text: 'Got it!',
+      me: true,
+      time: '10:33 AM',
+    },
+  ]);
   sendBtn = signal(true);
   isScreenShareStarted = signal(false);
   connectionState = 'Disconnected';
@@ -71,7 +95,8 @@ export class WebrtcUiComponent implements AfterViewInit {
   constructor(
     public dialog: MatDialog,
     private readonly manualWebrtcService: ManualWebrtcService,
-    private readonly webrtcService: WebRTCService
+    private readonly webrtcService: WebRTCService,
+    private _snackBar: MatSnackBar
   ) {}
   get logs() {
     return [];
@@ -80,7 +105,10 @@ export class WebrtcUiComponent implements AfterViewInit {
     const resize = () => {
       this.isMobile = window.innerWidth <= 743;
     };
-
+    this.manualWebrtcService.Messages$.subscribe((messages) => {
+      console.log(messages);
+      //  this.messages.set(messages);
+    });
     window.addEventListener('resize', resize);
     if (this.type === 'offer') {
       this.status_text['nothing'] = 'Create a connection';
@@ -94,6 +122,11 @@ export class WebrtcUiComponent implements AfterViewInit {
       this.ErrorMessage.set(message);
       this.showAlert();
     });
+    navigator.mediaDevices.ondevicechange = async () => {
+      console.log('🔄 Audio device changed');
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      console.log(devices);
+    };
 
     this.manualWebrtcService.connStateData.pipe().subscribe((state) => {
       this.connectedcreated = state.connectedcreated;
@@ -102,6 +135,10 @@ export class WebrtcUiComponent implements AfterViewInit {
 
       // show dialog, toast, etc. here]qwsad
     });
+
+    navigator.mediaDevices.ondevicechange = () => {
+      this._snackBar.open('Seems like device changed', 'Close');
+    };
   }
   get getMessages() {
     return this.manualWebrtcService.MessageList;
@@ -187,15 +224,14 @@ export class WebrtcUiComponent implements AfterViewInit {
       this.current_cameraState = MediaState.Idle;
     }
   }
-  startAudio = async () => {
+  startAudio = async (deviceid = '') => {
     try {
       const stream = this.manualWebrtcService.getAudioStreamValue();
       console.log(stream.getAudioTracks());
       // 1️⃣ Mic never started yet (empty MediaStream)
-      if (stream.getAudioTracks().length === 0) {
-        console.log(stream.getAudioTracks());
+      if (stream.getAudioTracks().length === 0 && deviceid) {
         const audioStream = await navigator.mediaDevices.getUserMedia({
-          audio: true,
+          audio: { deviceId: { exact: deviceid } },
           video: false,
         });
 
@@ -205,13 +241,21 @@ export class WebrtcUiComponent implements AfterViewInit {
       }
       console.log('going to mute');
       // 2️⃣ Mic already exists → toggle mute
-      const muted = this.toggleMute(stream, 'audio');
-      this.currentAudiostate = muted ? MediaState.Idle : MediaState.InProgress;
     } catch (e) {
       console.error('Mic error', e);
       this.currentAudiostate = MediaState.Idle;
     }
   };
+  AudioMUte() {
+    const stream = this.manualWebrtcService.getAudioStreamValue();
+    if (stream.getAudioTracks().length > 0) {
+      const muted = this.toggleMute(stream, 'audio');
+      this.currentAudiostate = muted ? MediaState.Stopped : MediaState.InProgress;
+    } else {
+      this.openDialog();
+    }
+  }
+
   get isREciverTrackAviable() {
     return this.ReciverAudioStream?.getAudioTracks().length;
   }
@@ -406,6 +450,7 @@ export class WebrtcUiComponent implements AfterViewInit {
       });
     }
   }
+
   isSpeaking = signal(false);
   sendMessage() {
     this.webrtcService.sendMessage(this.Textmessage);
@@ -422,14 +467,12 @@ export class WebrtcUiComponent implements AfterViewInit {
   }
   Textmessage = '';
   openDialog(): void {
-    const dialogRef = this.dialog.open(DialogOverviewExampleDialog, {
-      width: '250px',
-      data: { name: this.name, animal: this.animal },
-    });
+    this.currentAudiostate = MediaState.Starting;
+    const dialogRef = this.dialog.open(Dialogbox, {});
 
     dialogRef.afterClosed().subscribe((result) => {
-      console.log('The dialog was closed');
-      this.animal = result;
+      this.currentAudiostate = MediaState.InProgress;
+      this.startAudio(result);
     });
   }
 }

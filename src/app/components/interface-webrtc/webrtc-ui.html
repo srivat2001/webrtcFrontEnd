@@ -34,7 +34,7 @@
                 <div>Overlay has been added to avoid screeen mirroring</div>
 
                 }@else { @if(current_screenShareState === StreamState.Starting){
-                <app-spinner></app-spinner>
+                <app-spinner [size]="'20px'" [border]="'5px'"></app-spinner>
                 <h3 class="info-text">Starting screen share ...</h3>
                 }@else {
 
@@ -322,23 +322,52 @@
           </div>
           }
           <div
-            [matTooltip]="currentAudiostate + 'ff'"
             [ngClass]="{
            'inprogress': current_screenShareState !== StreamState.Idle,
         }"
-            class="icon-holder cancel-btn"
-            (touchstart)="startAudio()"
-            (click)="startAudio()"
+            class="icon-holder cancel-btn extraoption"
           >
             <mat-icon
               [ngClass]="{
                 'copy-icon': true,
                 'material-symbols-outlined': true,
                 'btn-copy': true,
+
                 disabled: !sendBtn
               }"
-              [fontIcon]="currentAudiostate === StreamState.Idle ? 'mic_off' : 'mic'"
+              [fontIcon]="
+                current_ReciverAudiostate == StreamState.Idle ? 'more_horiz' : 'more_horiz'
+              "
+              (click)="openDialog()"
+              aria-label="Copy ICE candidate"
             ></mat-icon>
+            <div class="mic_off_holder">
+              @if(currentAudiostate === StreamState.Starting){
+              <app-spinner [size]="'20px'" [border]="'2px'"></app-spinner>
+
+              }@else{
+              <mat-icon
+                [ngClass]="{
+                  'copy-icon': true,
+                  'material-symbols-outlined': true,
+                  'btn-copy': true,
+                  disabled: !sendBtn
+                }"
+                (click)="AudioMUte()"
+                [fontIcon]="
+                  currentAudiostate === StreamState.Idle
+                    ? 'mic_alert'
+                    : currentAudiostate === StreamState.InProgress
+                    ? 'mic'
+                    : currentAudiostate === StreamState.Stopped
+                    ? 'mic_off'
+                    : ''
+                "
+              ></mat-icon>
+
+              }
+              <!--  -->
+            </div>
           </div>
         </div>
       </div>
@@ -355,7 +384,7 @@
       <h2>Chat</h2>
     </div>
     <div class="messages">
-      <div *ngFor="let m of getMessages" class="msg" [ngClass]="{ me: m.me }">
+      <div *ngFor="let m of messages()" class="msg" [ngClass]="{ me: m.me }">
         {{ m.text }}
         <div class="time">{{ m.time }}</div>
       </div>

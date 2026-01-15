@@ -37,7 +37,8 @@ export class ManualWebrtcService {
       ...partial,
     });
   }
-  Messages: { text: string; me: boolean; time: string }[] = [];
+  private Messages = new BehaviorSubject<{ text: string; me: boolean; time: string }[]>([]);
+  public Messages$ = this.Messages.asObservable();
   //public connStateData$ = this.connStateData.asObservable();
   public timerId: any = null;
   public seconds = 10;
@@ -49,10 +50,11 @@ export class ManualWebrtcService {
     'Await confirmation from Receiver side',
   ];
   get MessageList() {
-    return this.Messages;
+    return this.Messages.value;
   }
   public PushToMessage(msg: { text: string; me: boolean; time: string }) {
-    this.Messages.push(msg);
+    const current = this.Messages.value;
+    this.Messages.next([...current, msg]);
   }
   progressSetuper = signal([false, false, false, false]);
   logs = signal<{ type: 'normal' | 'warn' | 'error'; message: string }[]>([]);

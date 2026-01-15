@@ -1,0 +1,76 @@
+.device-modal {
+  max-width: 720px;
+  margin: auto;
+  padding: 24px;
+  background: #0f172a;
+  color: #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+
+  h2 {
+    margin-bottom: 24px;
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+
+  section {
+    margin-bottom: 32px;
+
+    h3 {
+      margin-bottom: 12px;
+      font-size: 1.1rem;
+      color: #93c5fd;
+    }
+  }
+}
+
+.device-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.device-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #020617;
+  border: 1px solid #1e293b;
+  cursor: pointer;
+  transition: all 0.25s ease;
+
+  &:hover {
+    border-color: #38bdf8;
+    background: #020617;
+  }
+
+  &.active {
+    border-color: #22c55e;
+    background: linear-gradient(145deg, rgba(34, 197, 94, 0.15), rgba(34, 197, 94, 0.05));
+  }
+
+  input {
+    accent-color: #22c55e;
+    cursor: pointer;
+  }
+
+  .info {
+    overflow: hidden;
+
+    .label {
+      font-size: 0.95rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .meta {
+      font-size: 0.7rem;
+      opacity: 0.6;
+      word-break: break-all;
+    }
+  }
+}
