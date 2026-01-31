@@ -14,402 +14,457 @@
 </div>
 
 } -->
-@if(true){
-<div class="content" (click)="startMedia()" (touchstart)="startMedia()">
-  <div
-    class="side-panel"
-    [ngClass]="{
-      open: chathidden
-    }"
-  >
-    <div class="screen-share">
-      <div class="video-loop">
-        <div class="video-overlay-container">
-          <div class="video-flex">
-            <div class="screen-record-overlay-holder">
-              <video class="screen-record-video" #screenVideo autoplay playsinline muted></video>
-              @if(!isReceivingScreen()){
-              <div class="overlayvideo">
-                @if(isScreenShareStarted()){
-                <div>Overlay has been added to avoid screeen mirroring</div>
+@if (true) {
+  <div class="content" (click)="startMedia()" (touchstart)="startMedia()">
+    <div
+      class="side-panel"
+      [ngClass]="{
+        open: chathidden,
+      }"
+    >
+      <div class="screen-share">
+        <div class="video-loop">
+          <div class="video-overlay-container">
+            <div class="video-flex">
+              <div class="screen-record-overlay-holder">
+                <video class="screen-record-video" #screenVideo autoplay playsinline muted></video>
+                @if (!isReceivingScreen()) {
+                  <div class="overlayvideo">
+                    @if (isScreenShareStarted()) {
+                      <div>Overlay has been added to avoid screeen mirroring</div>
+                    } @else {
+                      @if (current_screenShareState === StreamState.Starting) {
+                        <app-spinner [size]="'20px'" [border]="'5px'"></app-spinner>
+                        <h3 class="info-text">Starting screen share ...</h3>
+                      } @else {
+                        <button
+                          matButton="filled"
+                          [color]="'white'"
+                          (click)="startScreenShare()"
+                          (touchstart)="startScreenShare()"
+                        >
+                          <mat-icon
+                            [ngClass]="{
+                              'copy-icon': true,
+                              'material-symbols-outlined': true,
+                              'btn-copy': true,
 
-                }@else { @if(current_screenShareState === StreamState.Starting){
-                <app-spinner [size]="'20px'" [border]="'5px'"></app-spinner>
-                <h3 class="info-text">Starting screen share ...</h3>
-                }@else {
-
-                <button
-                  matButton="filled"
-                  [color]="'white'"
-                  (click)="startScreenShare()"
-                  (touchstart)="startScreenShare()"
-                >
-                  <mat-icon
-                    [ngClass]="{
-                      'copy-icon': true,
-                      'material-symbols-outlined': true,
-                      'btn-copy': true,
-
-                      disabled: !sendBtn
-                    }"
-                    (click)="startScreenShare()"
-                    (touchstart)="startScreenShare()"
-                    [fontIcon]="sendBtn() ? 'screen_share' : 'screen_share'"
-                    aria-label="Copy ICE candidate"
-                  ></mat-icon>
-                  Share your screeen{{ status() }}
-                </button>
-                } }
-              </div>
-              }
-            </div>
-            <div class="video-camera-container">
-              @if(isMobile){
-              <div class="video-holder" [class.speaking]="isSpeaking()">
-                <div class="font">Receiver Feed</div>
-                <video class="camera-record-video" autoplay #cameraVideo2 playsinline muted></video>
-                @if(isREciverTrackAviable){
-                <div class="audio-control">
-                  <mat-icon
-                    [ngClass]="{
-                      'copy-icon': true,
-                      'material-symbols-outlined': true,
-                      'btn-copy': true,
-
-                      disabled: !sendBtn
-                    }"
-                    (click)="RecieverToggleMute()"
-                    (touchstart)="RecieverToggleMute()"
-                    [fontIcon]="current_ReciverAudiostate == StreamState.Idle ? 'mic_off' : 'mic'"
-                    aria-label="Copy ICE candidate"
-                  ></mat-icon>
-                </div>
+                              disabled: !sendBtn,
+                            }"
+                            (click)="startScreenShare()"
+                            (touchstart)="startScreenShare()"
+                            [fontIcon]="sendBtn() ? 'screen_share' : 'screen_share'"
+                            aria-label="Copy ICE candidate"
+                          ></mat-icon>
+                          Share your screeen{{ status() }}
+                        </button>
+                      }
+                    }
+                  </div>
                 }
               </div>
-              <div class="video-holder Receiver">
-                <div class="font">Sender Feed</div>
-                <video class="camera-record-video" autoplay #cameraVideo playsinline muted></video>
-                >
-              </div>
-
-              }@else{
-              <div class="video-holder Receiver">
-                <div class="font">Sender Feed</div>
-                <video class="camera-record-video" autoplay #cameraVideo playsinline muted></video>
-                >
-              </div>
-              <div class="video-holder" [class.speaking]="isSpeaking()">
-                <div class="font">Receiver Feed</div>
-                <video class="camera-record-video" autoplay #cameraVideo2 playsinline muted></video>
-                @if(isREciverTrackAviable){
-                <div class="audio-control">
-                  <mat-icon
-                    [ngClass]="{
-                      'copy-icon': true,
-                      'material-symbols-outlined': true,
-                      'btn-copy': true,
-
-                      disabled: !sendBtn
-                    }"
-                    (click)="RecieverToggleMute()"
-                    (touchstart)="RecieverToggleMute()"
-                    [fontIcon]="current_ReciverAudiostate == StreamState.Idle ? 'mic_off' : 'mic'"
-                    aria-label="Copy ICE candidate"
-                  ></mat-icon>
-                </div>
-                }
-              </div>
-              }
-
-              <div class="audio-control">
-                <audio class="camera-record-video" autoplay #audio></audio>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div class="flex-btn-holder">
-        <div class="for-animation">
-          <div
-            class="connection-holder skeleton"
-            [ngClass]="{
-              connectedcreated: status() === 'connected',
-              skeleton: status() !== 'connected'
-            }"
-          >
-            <div class="btn-iconflex">
-              <div class="userid">
-                @if(status() ==="user_id_created"){
-                <mat-icon
-                  class="copy-icon material-symbols-outlined btn-copy"
-                  fontIcon="content_copy"
-                  aria-label="Copy ICE candidate"
-                ></mat-icon>
-                } @if ( (type === 'offer' || status_text[status()] ==="user_id_created") ) {
-                @if(status() ==="nothing" || status() === "offer_initiated"){
-                <div class="connected-created">
-                  {{ status_text[status()] }}
-                </div>
-                }@else {
-                <input
-                  class="userid-holder"
-                  (input)="setRoomId($any($event.target).value)"
-                  [value]="getRoomId()"
-                  [placeholder]="'User id creating '"
-                />
-                } } @else { @if(connectedcreated){
-                <div class="connected-created">
-                  {{ status_text[status()] }}
-                </div>
-                }@else{
-                <input
-                  class="userid-holder"
-                  (input)="setRoomId($any($event.target).value)"
-                  [value]="getRoomId()"
-                  [placeholder]="'Enter the room id'"
-                />
-                } }
-              </div>
-              <div class="flex-display-center" [class.shiftleft]="status() === 'offer_initiated'">
-                @if(status() ==="nothing" || status() === "offer_initiated" ||
-                status()==='connecting_to_existing'){
-                <div>
-                  <div class="icon-holder">
-                    <div (pointerdown)="createOffer($event)">
-                      <div class="icon-holder">
+              <div class="video-camera-container">
+                @if (isMobile) {
+                  <div class="video-holder" [class.speaking]="isSpeaking()">
+                    <div class="font">Receiver Feed</div>
+                    <video
+                      class="camera-record-video"
+                      autoplay
+                      #cameraVideo2
+                      playsinline
+                      muted
+                    ></video>
+                    @if (isREciverTrackAviable) {
+                      <div class="audio-control">
                         <mat-icon
-                          class="copy-icon material-symbols-outlined btn-copy"
                           [ngClass]="{
-                            rotate:
-                              status() === 'offer_initiated' ||
-                              status() === 'connecting_to_existing'
+                            'copy-icon': true,
+                            'material-symbols-outlined': true,
+                            'btn-copy': true,
+
+                            disabled: !sendBtn,
                           }"
+                          (click)="RecieverToggleMute()"
+                          (touchstart)="RecieverToggleMute()"
                           [fontIcon]="
-                            status() == 'offer_initiated' || status() == 'connecting_to_existing'
-                              ? 'refresh'
-                              : 'arrow_forward'
+                            current_ReciverAudiostate == StreamState.Idle ? 'mic_off' : 'mic'
                           "
-                          class="close"
-                          aria-label="close"
+                          aria-label="Copy ICE candidate"
                         ></mat-icon>
                       </div>
-                    </div>
+                    }
                   </div>
-                </div>
-                } @if( status() === "offer_initiated" || status() === "user_id_created" ||status()
-                ==="connected" ){ @if( status() === "user_id_created" ){
-                <mat-icon
-                  class="copy-icon material-symbols-outlined btn-copy"
-                  fontIcon="content_copy"
-                  aria-label="Copy ICE candidate"
-                ></mat-icon>
+                  <div class="video-holder Receiver">
+                    <div class="font">Sender Feed</div>
+                    <video
+                      class="camera-record-video"
+                      autoplay
+                      #cameraVideo
+                      playsinline
+                      muted
+                    ></video>
+                    >
+                  </div>
+                } @else {
+                  <div class="video-holder Receiver">
+                    <div class="font">Sender Feed</div>
+                    <video
+                      class="camera-record-video"
+                      autoplay
+                      #cameraVideo
+                      playsinline
+                      muted
+                    ></video>
+                    >
+                  </div>
+                  <div class="video-holder" [class.speaking]="isSpeaking()">
+                    <div class="font">Receiver Feed</div>
+                    <video
+                      class="camera-record-video"
+                      autoplay
+                      #cameraVideo2
+                      playsinline
+                      muted
+                    ></video>
+                    @if (isREciverTrackAviable) {
+                      <div class="audio-control">
+                        <mat-icon
+                          [ngClass]="{
+                            'copy-icon': true,
+                            'material-symbols-outlined': true,
+                            'btn-copy': true,
+
+                            disabled: !sendBtn,
+                          }"
+                          (click)="RecieverToggleMute()"
+                          (touchstart)="RecieverToggleMute()"
+                          [fontIcon]="
+                            current_ReciverAudiostate == StreamState.Idle ? 'mic_off' : 'mic'
+                          "
+                          aria-label="Copy ICE candidate"
+                        ></mat-icon>
+                      </div>
+                    }
+                  </div>
                 }
 
-                <div class="icon-holder">
-                  <div>
-                    <div class="icon-holder">
-                      <mat-icon
-                        class="copy-icon material-symbols-outlined btn-copy"
-                        (click)="resetConnection()"
-                        (touchstart)="resetConnection()"
-                        [fontIcon]="'stop_circle'"
-                        class="close"
-                        aria-label="close"
-                      ></mat-icon>
-                    </div>
-                  </div>
+                <div class="audio-control">
+                  <audio class="camera-record-video" autoplay #audio></audio>
                 </div>
+                @if (
+                  current_screenRecordingState === StreamState.InProgress ||
+                  current_screenRecordingState === StreamState.Starting
+                ) {
+                  <div class="screen-recording-timecode">
+                    <div class="timer">{{ formatTime(recordingSecondsLeft()) }}</div>
+                  </div>
+                } @else {
+                  @if (hasLastRecording() || current_screenRecordingState === StreamState.Stopped) {
+                    <div class="screen-recording-timecode">
+                      <div class="recording-ready">
+                        <span class="ready-text">Your recording is ready for download</span>
+                        <button class="download-btn" (click)="downloadLastRecording()">
+                          <mat-icon fontIcon="download"></mat-icon>
+                        </button>
+                      </div>
+                    </div>
+                  }
                 }
               </div>
             </div>
           </div>
-          <ng-container #alertHost></ng-container>
         </div>
-        <div class="icon-holder-main">
-          <div
-            class="icon-holder mobile"
-            [ngClass]="{
-           'inprogress': current_screenShareState !== StreamState.Idle,
-        }"
-          >
-            <mat-icon
-              [ngClass]="{
-                'copy-icon': true,
-                'material-symbols-outlined': true,
-                'btn-copy': true,
-
-                disabled: !sendBtn
-              }"
-              (click)="startScreenShare()"
-              (touchstart)="startScreenShare()"
-              [fontIcon]="'screen_share'"
-              aria-label="Copy ICE candidate"
-            ></mat-icon>
-          </div>
-          <div
-            class="icon-holder mobile"
-            [ngClass]="{
-           'icon-holder-notsharedscreen': !isScreenShareStarted(),
-        }"
-          >
-            <mat-icon
-              [ngClass]="{
-                'copy-icon': true,
-                'material-symbols-outlined': true,
-                'btn-copy': true,
-
-                disabled: !sendBtn
-              }"
-              (click)="openchat()"
-              (touchstart)="openchat()"
-              [fontIcon]="'chat'"
-              aria-label="Copy ICE candidate"
-            ></mat-icon>
-          </div>
-          @if(isScreenShareStarted()){
-          <div class="icon-holder cancel-btn">
-            <mat-icon
-              [ngClass]="{
-                'copy-icon': true,
-                'material-symbols-outlined': true,
-                'btn-copy': true,
-                disabled: !sendBtn
-              }"
-              [fontIcon]="'cancel'"
-              (click)="stopScreenShare()"
-              (touchstart)="stopScreenShare()"
-              aria-label="Cancel screen share"
-            ></mat-icon>
-          </div>
-          } @if(isVideostarted){
-          <div>
-            <div class="icon-holder cancel-btn">
-              <mat-icon
-                [ngClass]="{
-                  'copy-icon': true,
-                  'material-symbols-outlined': true,
-                  'btn-copy': true,
-                  disabled: !sendBtn
-                }"
-                [fontIcon]="'stop_circle'"
-                aria-label="Cancel screen share"
-              ></mat-icon>
-            </div>
-          </div>
-          } @else {
-          <div (click)="stoprecording()" (touchstart)="stoprecording()">
+        <div class="flex-btn-holder">
+          <div class="for-animation">
             <div
-              matTooltip="Start recording the screen"
-              (click)="startCamera()"
-              (touchstart)="startCamera()"
-              class="icon-holder cancel-btn"
+              class="connection-holder skeleton"
+              [ngClass]="{
+                connectedcreated: status() === 'connected',
+                skeleton: status() !== 'connected',
+              }"
+            >
+              <div class="btn-iconflex">
+                <div class="userid">
+                  @if (status() === 'user_id_created') {
+                    <mat-icon
+                      class="copy-icon material-symbols-outlined btn-copy"
+                      fontIcon="content_copy"
+                      aria-label="Copy ICE candidate"
+                    ></mat-icon>
+                  }
+                  @if (type === 'offer' || status_text[status()] === 'user_id_created') {
+                    @if (status() === 'nothing' || status() === 'offer_initiated') {
+                      <div class="connected-created">
+                        {{ status_text[status()] }}
+                      </div>
+                    } @else {
+                      <input
+                        class="userid-holder"
+                        (input)="setRoomId($any($event.target).value)"
+                        [value]="getRoomId()"
+                        [placeholder]="'User id creating '"
+                      />
+                    }
+                  } @else {
+                    @if (connectedcreated) {
+                      <div class="connected-created">
+                        {{ status_text[status()] }}
+                      </div>
+                    } @else {
+                      <input
+                        class="userid-holder"
+                        (input)="setRoomId($any($event.target).value)"
+                        [value]="getRoomId()"
+                        [placeholder]="'Enter the room id'"
+                      />
+                    }
+                  }
+                </div>
+                <div class="flex-display-center" [class.shiftleft]="status() === 'offer_initiated'">
+                  @if (
+                    status() === 'nothing' ||
+                    status() === 'offer_initiated' ||
+                    status() === 'connecting_to_existing'
+                  ) {
+                    <div>
+                      <div class="icon-holder">
+                        <div (pointerdown)="createOffer($event)">
+                          <div class="icon-holder">
+                            <mat-icon
+                              class="copy-icon material-symbols-outlined btn-copy"
+                              [ngClass]="{
+                                rotate:
+                                  status() === 'offer_initiated' ||
+                                  status() === 'connecting_to_existing',
+                              }"
+                              [fontIcon]="
+                                status() == 'offer_initiated' ||
+                                status() == 'connecting_to_existing'
+                                  ? 'refresh'
+                                  : 'arrow_forward'
+                              "
+                              class="close"
+                              aria-label="close"
+                            ></mat-icon>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                  @if (
+                    status() === 'offer_initiated' ||
+                    status() === 'user_id_created' ||
+                    status() === 'connected'
+                  ) {
+                    @if (status() === 'user_id_created') {
+                      <mat-icon
+                        class="copy-icon material-symbols-outlined btn-copy"
+                        fontIcon="content_copy"
+                        aria-label="Copy ICE candidate"
+                      ></mat-icon>
+                    }
+
+                    <div class="icon-holder">
+                      <div>
+                        <div class="icon-holder">
+                          <mat-icon
+                            class="copy-icon material-symbols-outlined btn-copy"
+                            (click)="resetConnection()"
+                            (touchstart)="resetConnection()"
+                            [fontIcon]="'stop_circle'"
+                            class="close"
+                            aria-label="close"
+                          ></mat-icon>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+            <ng-container #alertHost></ng-container>
+          </div>
+          <div class="icon-holder-main">
+            <button (click)="StopScreenshareRecorderOption()">
+              Test screen cameraa recorder stop
+            </button>
+
+            <div
+              class="icon-holder mobile"
+              [ngClass]="{
+                inprogress: current_screenShareState !== StreamState.Idle,
+              }"
             >
               <mat-icon
                 [ngClass]="{
                   'copy-icon': true,
                   'material-symbols-outlined': true,
                   'btn-copy': true,
-                  disabled: !sendBtn
+
+                  disabled: !sendBtn,
                 }"
-                [fontIcon]="
-                  current_cameraState === StreamState.Idle
-                    ? 'video_camera_front_off'
-                    : 'video_camera_front'
-                "
-                aria-label="Cancel screen share"
+                (click)="startScreenShare()"
+                (touchstart)="startScreenShare()"
+                [fontIcon]="'screen_share'"
+                aria-label="Copy ICE candidate"
               ></mat-icon>
             </div>
-          </div>
-          }
-          <div
-            [ngClass]="{
-           'inprogress': current_screenShareState !== StreamState.Idle,
-        }"
-            class="icon-holder cancel-btn extraoption"
-          >
-            <mat-icon
+            <div
+              class="icon-holder mobile"
               [ngClass]="{
-                'copy-icon': true,
-                'material-symbols-outlined': true,
-                'btn-copy': true,
-
-                disabled: !sendBtn
+                'icon-holder-notsharedscreen': !isScreenShareStarted(),
               }"
-              [fontIcon]="
-                current_ReciverAudiostate == StreamState.Idle ? 'more_horiz' : 'more_horiz'
-              "
-              (click)="openDialog()"
-              aria-label="Copy ICE candidate"
-            ></mat-icon>
-            <div class="mic_off_holder">
-              @if(currentAudiostate === StreamState.Starting){
-              <app-spinner [size]="'20px'" [border]="'2px'"></app-spinner>
-
-              }@else{
+            >
               <mat-icon
                 [ngClass]="{
                   'copy-icon': true,
                   'material-symbols-outlined': true,
                   'btn-copy': true,
-                  disabled: !sendBtn
-                }"
-                (click)="AudioMUte()"
-                [fontIcon]="
-                  currentAudiostate === StreamState.Idle
-                    ? 'mic_alert'
-                    : currentAudiostate === StreamState.InProgress
-                    ? 'mic'
-                    : currentAudiostate === StreamState.Stopped
-                    ? 'mic_off'
-                    : ''
-                "
-              ></mat-icon>
 
-              }
-              <!--  -->
+                  disabled: !sendBtn,
+                }"
+                (click)="openchat()"
+                (touchstart)="openchat()"
+                [fontIcon]="'chat'"
+                aria-label="Copy ICE candidate"
+              ></mat-icon>
+            </div>
+            @if (isScreenShareStarted()) {
+              <div class="icon-holder cancel-btn">
+                <mat-icon
+                  [ngClass]="{
+                    'copy-icon': true,
+                    'material-symbols-outlined': true,
+                    'btn-copy': true,
+                    disabled: !sendBtn,
+                  }"
+                  [fontIcon]="'cancel'"
+                  (click)="stopScreenShare()"
+                  (touchstart)="stopScreenShare()"
+                  aria-label="Cancel screen share"
+                ></mat-icon>
+              </div>
+            }
+            @if (current_screenShareState == StreamState.InProgress) {
+              <div (click)="isScreenVideoRecorderoptionStart()">
+                <div class="icon-holder cancel-btn">
+                  <mat-icon
+                    [ngClass]="{
+                      'copy-icon': true,
+                      'material-symbols-outlined': true,
+                      'btn-copy': true,
+                      disabled: !sendBtn,
+                    }"
+                    [fontIcon]="'stop_circle'"
+                    aria-label="Cancel screen share"
+                  ></mat-icon>
+                </div>
+              </div>
+            }
+            <div (click)="startCamera()">
+              <div matTooltip="Start recording the screen" class="icon-holder cancel-btn">
+                <mat-icon
+                  [ngClass]="{
+                    'copy-icon': true,
+                    'material-symbols-outlined': true,
+                    'btn-copy': true,
+                    disabled: !sendBtn,
+                  }"
+                  [fontIcon]="
+                    current_cameraState === StreamState.Idle
+                      ? 'video_camera_front_off'
+                      : 'video_camera_front'
+                  "
+                  aria-label="Cancel screen share"
+                ></mat-icon>
+              </div>
+            </div>
+
+            <div
+              [ngClass]="{
+                inprogress: current_screenShareState !== StreamState.Idle,
+              }"
+              class="icon-holder cancel-btn extraoption"
+            >
+              <mat-icon
+                [ngClass]="{
+                  'copy-icon': true,
+                  'material-symbols-outlined': true,
+                  'btn-copy': true,
+
+                  disabled: !sendBtn,
+                }"
+                [fontIcon]="
+                  current_ReciverAudiostate == StreamState.Idle ? 'more_horiz' : 'more_horiz'
+                "
+                (click)="openDialog()"
+                aria-label="Copy ICE candidate"
+              ></mat-icon>
+              <div class="mic_off_holder">
+                @if (currentAudiostate === StreamState.Starting) {
+                  <app-spinner [size]="'20px'" [border]="'2px'"></app-spinner>
+                } @else {
+                  <mat-icon
+                    [ngClass]="{
+                      'copy-icon': true,
+                      'material-symbols-outlined': true,
+                      'btn-copy': true,
+                      disabled: !sendBtn,
+                    }"
+                    (click)="AudioMUte()"
+                    [fontIcon]="
+                      currentAudiostate === StreamState.Idle
+                        ? 'mic_alert'
+                        : currentAudiostate === StreamState.InProgress
+                          ? 'mic'
+                          : currentAudiostate === StreamState.Stopped
+                            ? 'mic_off'
+                            : ''
+                    "
+                  ></mat-icon>
+                }
+                <!--  -->
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
 
-  <div
-    class="chat-panel"
-    [ngClass]="{
-      open: chathidden
-    }"
-  >
-    <div class="chat-header">
-      <h2>Chat</h2>
-    </div>
-    <div class="messages">
-      <div *ngFor="let m of messages()" class="msg" [ngClass]="{ me: m.me }">
-        {{ m.text }}
-        <div class="time">{{ m.time }}</div>
+    <div
+      class="chat-panel"
+      [ngClass]="{
+        open: chathidden,
+      }"
+    >
+      <div class="chat-header">
+        <h2>Chat</h2>
       </div>
-    </div>
-    <div class="chat-input-area">
-      <input [(ngModel)]="Textmessage" placeholder="Type a message…" />
-      <div class="chatholder">
-        <mat-icon
-          [ngClass]="{
-            'copy-icon': true,
-            'material-symbols-outlined': true,
-            'btn-copy': true,
-            disabled: !sendBtn
-          }"
-          (click)="sendMessage()"
-          (touchstart)="sendMessage()"
-          [fontIcon]="sendBtn() ? 'send' : 'cancel_schedule_send'"
-          aria-label="Copy ICE candidate"
-        ></mat-icon>
+      <div class="messages">
+        <div *ngFor="let m of messages()" class="msg" [ngClass]="{ me: m.me }">
+          {{ m.text }}
+          <div class="time">{{ m.time }}</div>
+        </div>
       </div>
+      <div class="chat-input-area">
+        <input [(ngModel)]="Textmessage" placeholder="Type a message…" />
+        <div class="chatholder">
+          <mat-icon
+            [ngClass]="{
+              'copy-icon': true,
+              'material-symbols-outlined': true,
+              'btn-copy': true,
+              disabled: !sendBtn,
+            }"
+            (click)="sendMessage()"
+            [fontIcon]="sendBtn() ? 'send' : 'cancel_schedule_send'"
+            aria-label="Copy ICE candidate"
+          ></mat-icon>
+        </div>
+      </div>
+      @if (!sendBtn()) {
+        <div class="overlay"></div>
+      }
     </div>
-    @if(!sendBtn()){
-    <div class="overlay"></div>
-
-    }
   </div>
-</div>
 }

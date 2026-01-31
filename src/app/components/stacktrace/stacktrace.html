@@ -1,9 +1,9 @@
 @if (getLogs().length > 0) {
-<div class="log-box">
-  @for (log of getLogs(); track $index) {
-  <div class="log-item" [ngClass]="log.type">
-    {{ log.message }}
+  <div class="log-box">
+    @for (log of getLogs(); track $index) {
+      <div class="log-item" [ngClass]="log.type">
+        {{ log.message }}
+      </div>
+    }
   </div>
-  }
-</div>
 }

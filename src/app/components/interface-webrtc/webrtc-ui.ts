@@ -18,6 +18,7 @@ import { MATERIAL_IMPORTS } from '../matimports';
 import { HelperToolbox } from './helper-toolbox/helper-toolbox';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ManualWebrtcService } from '../../services/manual-webrtc.service';
+import { VideoScreenRecoderService } from '../../services/videoscreenrecoder.service';
 import { Spinner } from '../../assets/spinner/spinner';
 import { WebRTCService } from '../../services/webrtc.service';
 import { MediaState } from '../../models/media-state.model';
@@ -33,28 +34,7 @@ import { single } from 'rxjs';
 })
 export class WebrtcUiComponent implements AfterViewInit {
   @Input() type: 'offer' | 'answer' = 'offer';
-  messages = signal<{ text: string; me: boolean; time: string }[]>([
-    {
-      text: 'This is a longer test message from the other person. It should wrap nicely in the chat box.',
-      me: false,
-      time: '10:30 AM',
-    },
-    {
-      text: 'Hi!',
-      me: false,
-      time: '10:31 AM',
-    },
-    {
-      text: 'This is my long message response. I am testing the interface to ensure everything displays correctly with different message lengths.',
-      me: true,
-      time: '10:32 AM',
-    },
-    {
-      text: 'Got it!',
-      me: true,
-      time: '10:33 AM',
-    },
-  ]);
+  messages = signal<{ text: string; me: boolean; time: string }[]>([]);
   sendBtn = signal(true);
   isScreenShareStarted = signal(false);
   connectionState = 'Disconnected';
@@ -80,7 +60,8 @@ export class WebrtcUiComponent implements AfterViewInit {
   public currentAudiostate: MediaState = MediaState.Idle;
   public current_ReciverAudiostate: MediaState = MediaState.Idle;
   public current_cameraState: MediaState = MediaState.Idle;
-
+  public current_screenRecordingState: MediaState = MediaState.Idle;
+  isScreenVideoRecorderoptionEnabled = false;
   animal!: string;
   name!: string;
   isVideostarted = false;
@@ -89,6 +70,12 @@ export class WebrtcUiComponent implements AfterViewInit {
   private ReciverAudioStream: MediaStream | null = new MediaStream();
   chunks: Blob[] = [];
   mediaRecorder!: MediaRecorder;
+
+  // Recording state is handled by VideoScreenRecoderService
+  // Use the service's `isRecording` signal to get status
+  get isPipRecording() {
+    return this.videoScreenRecoderService.isRecording();
+  }
   ErrorMessage = signal('');
   isMobile = window.innerWidth <= 743;
 
@@ -96,7 +83,8 @@ export class WebrtcUiComponent implements AfterViewInit {
     public dialog: MatDialog,
     private readonly manualWebrtcService: ManualWebrtcService,
     private readonly webrtcService: WebRTCService,
-    private _snackBar: MatSnackBar
+    private _snackBar: MatSnackBar,
+    private videoScreenRecoderService: VideoScreenRecoderService,
   ) {}
   get logs() {
     return [];
@@ -106,8 +94,16 @@ export class WebrtcUiComponent implements AfterViewInit {
       this.isMobile = window.innerWidth <= 743;
     };
     this.manualWebrtcService.Messages$.subscribe((messages) => {
-      console.log(messages);
-      //  this.messages.set(messages);
+      this.messages.set(messages);
+    });
+
+    // watch for recording stopped events to clear timers and show download UI
+    this.videoScreenRecoderService.recordingStopped$.subscribe((blob) => {
+      this.stopRecordingTimer();
+      this.current_screenRecordingState = MediaState.Stopped;
+      this.isScreenVideoRecorderoptionEnabled = false;
+      // recordingReady signal is set by service; UI will update automatically
+      console.debug('[ui] recording stopped event, blob size=', blob?.size);
     });
     window.addEventListener('resize', resize);
     if (this.type === 'offer') {
@@ -157,7 +153,7 @@ export class WebrtcUiComponent implements AfterViewInit {
         this.screenVideo,
         this.cameraVideo,
         this.cameraVideo2,
-        this.AudioRef
+        this.AudioRef,
       );
       this.Firstclick = false;
     }
@@ -186,13 +182,132 @@ export class WebrtcUiComponent implements AfterViewInit {
   get videoStream() {
     return this._videoStream;
   }
+  recordingSecondsLeft = signal(0);
+  private recordingTimerId: any = null;
 
+  private stopRecordingTimer() {
+    if (this.recordingTimerId) {
+      clearInterval(this.recordingTimerId);
+      this.recordingTimerId = null;
+    }
+    this.recordingSecondsLeft.set(0);
+  }
+
+  async isScreenVideoRecorderoptionStart() {
+    try {
+      // Do NOT start screen or camera here — require screen sharing to be active already
+      const screenStream = this.manualWebrtcService.getScreenrecordingStreamValue();
+      if (!screenStream || screenStream.getVideoTracks().length === 0) {
+        // alert user to start screen sharing first
+        this._snackBar.open('Please start screen sharing before recording', 'Close', {
+          duration: 3000,
+        });
+        return;
+      }
+
+      const screenEl = this.screenVideo?.nativeElement;
+      const camEl = this.cameraVideo?.nativeElement;
+      if (!screenEl) {
+        this._snackBar.open('Screen element not ready yet', 'Close', { duration: 3000 });
+        return;
+      }
+
+      // set state
+      this.current_screenRecordingState = MediaState.Starting;
+
+      await this.videoScreenRecoderService.startPipRecording(screenEl, camEl);
+
+      // mark in progress
+      this.current_screenRecordingState = MediaState.InProgress;
+      this.isScreenVideoRecorderoptionEnabled = true;
+
+      // start countdown timer (10 minutes)
+      this.stopRecordingTimer();
+      this.recordingSecondsLeft.set(10 * 60); // 10 minutes in seconds
+      this.recordingTimerId = setInterval(() => {
+        this.recordingSecondsLeft.update((s) => s - 1);
+        if (this.recordingSecondsLeft() <= 0) {
+          // stop recording when timer runs out
+          this.StopScreenshareRecorderOption();
+        }
+      }, 1000);
+    } catch (err) {
+      console.error('PIP start error', err);
+      this.current_screenRecordingState = MediaState.Idle;
+      this.isScreenVideoRecorderoptionEnabled = false;
+    }
+  }
+  async StopScreenshareRecorderOption() {
+    try {
+      // stop timer
+      this.stopRecordingTimer();
+
+      const blob = await this.videoScreenRecoderService.stopPipRecording();
+
+      // mark ui state
+      this.isVideostarted = false;
+      this.isScreenVideoRecorderoptionEnabled = false;
+
+      // update recording state to Stopped if we have a blob else Idle
+      this.current_screenRecordingState = blob && blob.size ? MediaState.Stopped : MediaState.Idle;
+
+      // keep screen share state as-is; if screen stream exists keep InProgress otherwise mark Idle
+      const screenStream = this.manualWebrtcService.getScreenrecordingStreamValue();
+      this.current_screenShareState =
+        screenStream && screenStream.getVideoTracks().length > 0
+          ? MediaState.InProgress
+          : MediaState.Idle;
+
+      // show ready state (service.recordingReady is set by service)
+      // optionally keep a reference to last blob locally
+      if (blob && blob.size) {
+        // show UI — service.recordingReady() will be true
+      }
+    } catch (err) {
+      console.error('Stop recording error', err);
+      this.current_screenRecordingState = MediaState.Idle;
+      this.isScreenVideoRecorderoptionEnabled = false;
+    }
+  }
+
+  downloadLastRecording() {
+    const blob = this.videoScreenRecoderService.getLastRecordingBlob();
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `pip-recording-${Date.now()}.webm`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    // clear stored recording after download
+    this.videoScreenRecoderService.clearLastRecording();
+    // reset recording UI state
+    this.current_screenRecordingState = MediaState.Idle;
+  }
+
+  hasLastRecording() {
+    return !!this.videoScreenRecoderService.getLastRecordingBlob();
+  }
+
+  formatTime(s: number) {
+    const mm = Math.floor(s / 60)
+      .toString()
+      .padStart(2, '0');
+    const ss = Math.floor(s % 60)
+      .toString()
+      .padStart(2, '0');
+    return `${mm}:${ss}`;
+  }
   startScreenShare = async () => {
     try {
       this.current_screenShareState = MediaState.Starting;
       const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
       this.manualWebrtcService.setScreenRecordingStream(stream);
       this.updateVideo(stream);
+      // inform recorder service about the screen video element
+      const screenEl = this.screenVideo?.nativeElement;
+      if (screenEl) this.videoScreenRecoderService.setScreenElement(screenEl);
       this.isScreenShareStarted.set(true);
       this.current_screenShareState = MediaState.InProgress;
     } catch (err) {
@@ -201,6 +316,7 @@ export class WebrtcUiComponent implements AfterViewInit {
   };
   async startCamera() {
     try {
+      console.log('Starting camera...');
       const stream = this.manualWebrtcService.getCameraStreamValue();
       if (stream.getVideoTracks().length === 0) {
         this.cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -214,6 +330,9 @@ export class WebrtcUiComponent implements AfterViewInit {
         camVideo.muted = true;
         camVideo.playsInline = true;
         await camVideo.play();
+        console.debug('startCamera: local camera playing, attaching to recorder');
+        // inform recorder service about camera element (recorder will attach stream if needed)
+        this.videoScreenRecoderService.setCameraElement(camVideo);
         this.current_cameraState = MediaState.InProgress;
         return;
       }
@@ -367,6 +486,8 @@ export class WebrtcUiComponent implements AfterViewInit {
   }
   stopScreenShare() {
     this.manualWebrtcService.StopScreenRecordingStream();
+    // tell recorder that screen element is gone (if recording continues, it will handle missing screen)
+    this.videoScreenRecoderService.setScreenElement(null);
     this.updateVideo(null, 'screen', false);
     this.current_screenShareState = MediaState.Stopped;
   }
@@ -376,7 +497,7 @@ export class WebrtcUiComponent implements AfterViewInit {
   public updateVideo(
     stream: MediaStream | null,
     type: string = 'screen',
-    isReceivingScreen = false
+    isReceivingScreen = false,
   ) {
     console.log('Updating UI with', stream, type, isReceivingScreen);
 
@@ -465,6 +586,7 @@ export class WebrtcUiComponent implements AfterViewInit {
   stopSpeakingIndicator() {
     this.stopDetector?.();
   }
+
   Textmessage = '';
   openDialog(): void {
     this.currentAudiostate = MediaState.Starting;
@@ -484,7 +606,7 @@ export class WebrtcUiComponent implements AfterViewInit {
 export class DialogOverviewExampleDialog {
   constructor(
     public dialogRef: MatDialogRef<DialogOverviewExampleDialog>,
-    @Inject(MAT_DIALOG_DATA) public data: any
+    @Inject(MAT_DIALOG_DATA) public data: any,
   ) {}
 
   onNoClick(): void {
