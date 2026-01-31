@@ -1120,8 +1120,7 @@
               color: #ffffff;
               padding: 1px 8px;
             }
-            .camera-record-video {
-            }
+
             .audio-control {
               color: white;
               position: absolute;
@@ -1399,17 +1398,20 @@
         &.cancel-btn {
           background: rgb(197 0 0);
         }
+        &.inProgress {
+          background: rgb(0 100 42);
+        }
         &.extraoption {
           width: 80px;
+          &.inProgress {
+            background: rgb(0 100 42);
+          }
           .mic_off_holder {
             display: flex;
             margin-right: 7px;
             app-spinner {
               margin-right: 5px;
             }
-          }
-          .extra-option-container {
-            background-color: #1b7f3b;
           }
         }
       }
@@ -1696,4 +1698,16 @@
       }
     }
   }
+}
+
+/* Snack bar variants for better in-app notification UI */
+.mat-snack-bar-container.snack-info {
+  background: linear-gradient(90deg, rgba(14, 165, 233, 0.12), rgba(14, 165, 233, 0.06));
+  color: #e6f7ff;
+  font-weight: 600;
+}
+.mat-snack-bar-container.snack-warning {
+  background: linear-gradient(90deg, rgba(255, 167, 38, 0.12), rgba(255, 87, 34, 0.06));
+  color: #fff6e8;
+  font-weight: 700;
 }

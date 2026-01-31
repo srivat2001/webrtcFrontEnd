@@ -1,54 +1,71 @@
-<div class="device-modal">
-  <h2>Change your audio</h2>
-
-  <!-- AUDIO INPUT -->
-  <section>
-    <h3>🎙️ Microphone</h3>
-    <div class="device-list">
-      <ng-container *ngFor="let d of devices">
-        <label
-          class="device-card"
-          *ngIf="d.kind === 'audioinput'"
-          [class.active]="selectedInputId === d.deviceId"
-        >
-          <input
-            type="radio"
-            name="audioinput"
-            [value]="d.deviceId"
-            [(ngModel)]="selectedInputId"
-            (change)="AudioDeviceSelected()"
-          />
-          <div class="info">
-            <div class="label">{{ d.label || 'Unknown microphone' }}</div>
-            <div class="meta">{{ d.deviceId }}</div>
-          </div>
-        </label>
-      </ng-container>
+<div class="device-modal" [ngSwitch]="dialogType">
+  <ng-container *ngSwitchCase="'Confirm'">
+    <h2>{{ data?.title || 'Confirm' }}</h2>
+    <p class="confirm-message">{{ data?.message || 'Are you sure?' }}</p>
+    <div class="confirm-actions">
+      <button mat-button (click)="confirmNo()">{{ data?.cancelText || 'No' }}</button>
+      <button mat-raised-button color="primary" (click)="confirmYes()">
+        {{ data?.confirmText || 'Yes' }}
+      </button>
     </div>
-  </section>
+  </ng-container>
 
-  <!-- AUDIO OUTPUT
-  <section>
-    <h3>🔊 Speaker</h3>
-    <div class="device-list">
-      <ng-container *ngFor="let d of devices">
-        <label
-          class="device-card"
-          *ngIf="d.kind === 'audiooutput'"
-          [class.active]="selectedOutputId === d.deviceId"
-        >
-          <input
-            type="radio"
-            name="audiooutput"
-            [value]="d.deviceId"
-            [(ngModel)]="selectedOutputId"
-          />
-          <div class="info">
-            <div class="label">{{ d.label || 'Unknown speaker' }}</div>
-            <div class="meta">{{ d.deviceId }}</div>
-          </div>
-        </label>
-      </ng-container>
-    </div>
-  </section> -->
+  <!-- Devices mode (default) -->
+  <ng-container *ngSwitchCase="'AudioSelector'">
+    <h2>Change your audio</h2>
+
+    <!-- AUDIO INPUT -->
+    <section>
+      <h3>🎙️ Microphone</h3>
+      <div class="device-list">
+        <ng-container *ngFor="let d of devices">
+          <label
+            class="device-card"
+            *ngIf="d.kind === 'audioinput'"
+            [class.active]="selectedInputId === d.deviceId"
+          >
+            <input
+              type="radio"
+              name="audioinput"
+              [value]="d.deviceId"
+              [(ngModel)]="selectedInputId"
+              (change)="AudioDeviceSelected()"
+            />
+            <div class="info">
+              <div class="label">{{ d.label || 'Unknown microphone' }}</div>
+              <div class="meta">{{ d.deviceId }}</div>
+            </div>
+          </label>
+        </ng-container>
+      </div>
+    </section>
+  </ng-container>
+
+  <ng-container *ngSwitchDefault>
+    <h2>Change your audio</h2>
+    <section>
+      <h3>🎙️ Microphone</h3>
+      <div class="device-list">
+        <ng-container *ngFor="let d of devices">
+          <label
+            class="device-card"
+            *ngIf="d.kind === 'audioinput'"
+            [class.active]="selectedInputId === d.deviceId"
+          >
+            <input
+              type="radio"
+              name="audioinput"
+              [value]="d.deviceId"
+              [(ngModel)]="selectedInputId"
+              (change)="AudioDeviceSelected()"
+            />
+            <div class="info">
+              <div class="label">{{ d.label || 'Unknown microphone' }}</div>
+              <div class="meta">{{ d.deviceId }}</div>
+            </div>
+          </label>
+        </ng-container>
+      </div>
+    </section>
+  </ng-container>
 </div>

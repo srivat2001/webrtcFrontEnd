@@ -185,11 +185,22 @@ export class WebrtcUiComponent implements AfterViewInit {
   recordingSecondsLeft = signal(0);
   private recordingTimerId: any = null;
 
+  // Notification helpers for recording end alerts
+  private recordingNotificationSent: boolean = false;
+  private recordingTestTimeout: any = null; // used to schedule the 6s test notification
+  private readonly NEAR_END_THRESHOLD = 10; // seconds before end to warn users
+
   private stopRecordingTimer() {
     if (this.recordingTimerId) {
       clearInterval(this.recordingTimerId);
       this.recordingTimerId = null;
     }
+    // clear any scheduled test notification
+    if (this.recordingTestTimeout) {
+      clearTimeout(this.recordingTestTimeout);
+      this.recordingTestTimeout = null;
+    }
+    this.recordingNotificationSent = false;
     this.recordingSecondsLeft.set(0);
   }
 
@@ -224,8 +235,43 @@ export class WebrtcUiComponent implements AfterViewInit {
       // start countdown timer (10 minutes)
       this.stopRecordingTimer();
       this.recordingSecondsLeft.set(10 * 60); // 10 minutes in seconds
+      // request notification permission if supported (user gesture is present when starting)
+      if ('Notification' in window && Notification.permission !== 'granted') {
+        Notification.requestPermission().then((perm) => {
+          if (perm === 'granted') console.debug('[ui] Notifications granted');
+        });
+      }
+
+      // quick test notification 6 seconds after start (for verification/testing only)
+      try {
+        this.recordingTestTimeout = setTimeout(() => {
+          this.sendDesktopNotification(
+            'Your recording will be saved locally and available for download after you stop or After 10 minutes of starting.',
+            'Recording started ',
+            { stopAction: false },
+          );
+          this.recordingNotificationSent = true; // avoid duplicate near-end alert right away
+        }, 6000);
+      } catch (err) {
+        console.warn('[ui] Failed to schedule test notification', err);
+      }
+
       this.recordingTimerId = setInterval(() => {
         this.recordingSecondsLeft.update((s) => s - 1);
+
+        // near-end alert
+        if (
+          !this.recordingNotificationSent &&
+          this.recordingSecondsLeft() === this.NEAR_END_THRESHOLD
+        ) {
+          this.sendDesktopNotification(
+            `Recording will end in ${this.NEAR_END_THRESHOLD} seconds. Click to stop recording now and download immediately.`,
+            'Recording almost finished',
+            { stopAction: true },
+          );
+          this.recordingNotificationSent = true;
+        }
+
         if (this.recordingSecondsLeft() <= 0) {
           // stop recording when timer runs out
           this.StopScreenshareRecorderOption();
@@ -596,6 +642,87 @@ export class WebrtcUiComponent implements AfterViewInit {
       this.currentAudiostate = MediaState.InProgress;
       this.startAudio(result);
     });
+  }
+
+  /**
+   * Toggle recording: start (with confirm) when Idle, otherwise stop recording.
+   */
+  toggleScreenRecording(): void {
+    if (this.current_screenRecordingState === MediaState.Idle) {
+      this.confirmRecordStart();
+    } else {
+      this.StopScreenshareRecorderOption();
+    }
+  }
+
+  /**
+   * Opens a confirmation dialog asking the user to confirm starting the PIP recorder.
+   * If the user confirms, `isScreenVideoRecorderoptionStart()` is invoked.
+   */
+  /**
+   * Opens a confirmation dialog asking the user to confirm starting the PIP recorder.
+   * If the user confirms, `isScreenVideoRecorderoptionStart()` is invoked.
+   */
+  confirmRecordStart(): void {
+    const dialogRef = this.dialog.open(Dialogbox, {
+      data: {
+        mode: 'confirm',
+        title: 'Start recording? ',
+        message:
+          'Start recording your screen and camera? The recording will be saved locally and available for download after you stop.',
+        confirmText: 'Start',
+        cancelText: 'Cancel',
+      },
+    });
+
+    dialogRef.afterClosed().subscribe((confirmed) => {
+      if (confirmed === true) {
+        this.isScreenVideoRecorderoptionStart();
+      } else {
+        this.current_screenRecordingState = MediaState.Idle;
+      }
+    });
+  }
+
+  private sendDesktopNotification(
+    body: string,
+    title = 'WeRTC Recorder',
+    opts?: { stopAction?: boolean },
+  ) {
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const notif = new Notification(title, {
+          body,
+          tag: 'webrtc-recorder',
+        });
+
+        notif.onclick = () => {
+          try {
+            window.focus();
+          } catch (e) {
+            /* noop */
+          }
+          if (opts?.stopAction) {
+            // stop recording when user clicks the notification
+            this.StopScreenshareRecorderOption();
+          }
+        };
+      } else {
+        // fallback to in-app snackbar with action to stop if requested
+        const panelClass = opts?.stopAction ? ['snack-warning'] : ['snack-info'];
+        const actionLabel = opts?.stopAction ? 'Stop' : 'Close';
+        const snackRef = this._snackBar.open(body, actionLabel, {
+          duration: opts?.stopAction ? 8000 : 4000,
+          panelClass,
+        });
+        if (opts?.stopAction) {
+          snackRef.onAction().subscribe(() => this.StopScreenshareRecorderOption());
+        }
+      }
+    } catch (err) {
+      console.warn('[ui] Notification failed', err);
+      this._snackBar.open(body, 'Close', { duration: 4000 });
+    }
   }
 }
 

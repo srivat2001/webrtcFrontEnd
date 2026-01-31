@@ -156,7 +156,9 @@
                   current_screenRecordingState === StreamState.Starting
                 ) {
                   <div class="screen-recording-timecode">
-                    <div class="timer">{{ formatTime(recordingSecondsLeft()) }}</div>
+                    <div class="timer">
+                      Your Recording will end in {{ formatTime(recordingSecondsLeft()) }}
+                    </div>
                   </div>
                 } @else {
                   @if (hasLastRecording() || current_screenRecordingState === StreamState.Stopped) {
@@ -285,10 +287,6 @@
             <ng-container #alertHost></ng-container>
           </div>
           <div class="icon-holder-main">
-            <button (click)="StopScreenshareRecorderOption()">
-              Test screen cameraa recorder stop
-            </button>
-
             <div
               class="icon-holder mobile"
               [ngClass]="{
@@ -346,8 +344,13 @@
               </div>
             }
             @if (current_screenShareState == StreamState.InProgress) {
-              <div (click)="isScreenVideoRecorderoptionStart()">
-                <div class="icon-holder cancel-btn">
+              <div (click)="toggleScreenRecording()">
+                <div
+                  class="icon-holder cancel-btn"
+                  [ngClass]="{
+                    inProgress: current_screenRecordingState === StreamState.InProgress,
+                  }"
+                >
                   <mat-icon
                     [ngClass]="{
                       'copy-icon': true,
@@ -362,7 +365,11 @@
               </div>
             }
             <div (click)="startCamera()">
-              <div matTooltip="Start recording the screen" class="icon-holder cancel-btn">
+              <div
+                matTooltip="Start recording the screen"
+                class="icon-holder cancel-btn"
+                [ngClass]="{ inProgress: current_cameraState === StreamState.InProgress }"
+              >
                 <mat-icon
                   [ngClass]="{
                     'copy-icon': true,
@@ -381,10 +388,10 @@
             </div>
 
             <div
-              [ngClass]="{
-                inprogress: current_screenShareState !== StreamState.Idle,
-              }"
               class="icon-holder cancel-btn extraoption"
+              [ngClass]="{
+                inProgress: currentAudiostate === StreamState.InProgress,
+              }"
             >
               <mat-icon
                 [ngClass]="{
@@ -400,7 +407,10 @@
                 (click)="openDialog()"
                 aria-label="Copy ICE candidate"
               ></mat-icon>
-              <div class="mic_off_holder">
+              <div
+                class="mic_off_holder"
+                [ngClass]="{ inProgress: currentAudiostate === StreamState.InProgress }"
+              >
                 @if (currentAudiostate === StreamState.Starting) {
                   <app-spinner [size]="'20px'" [border]="'2px'"></app-spinner>
                 } @else {
