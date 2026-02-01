@@ -547,8 +547,6 @@ export class WebrtcUiComponent implements AfterViewInit {
   ) {
     console.log('Updating UI with', stream, type, isReceivingScreen);
 
-    this.isReceivingScreen.set(isReceivingScreen);
-
     let mediaEl: HTMLVideoElement | HTMLAudioElement | undefined = undefined;
 
     // 1️⃣ Pick correct element
@@ -560,6 +558,8 @@ export class WebrtcUiComponent implements AfterViewInit {
         break;
 
       case 'screen':
+        this.isReceivingScreen.set(isReceivingScreen);
+
         mediaEl = this.screenVideo?.nativeElement;
         break;
 
